@@ -36,8 +36,8 @@ The selected item will swap with the item you're currently holding. That's it!
 
 ## 未来计划 / Future plans
 
-- 低版本支持  
-  Support for older versions
+- 更多版本支持  
+  Support for more versions
 
 - 其他模组加载器支持  
   Support for other mod loaders
