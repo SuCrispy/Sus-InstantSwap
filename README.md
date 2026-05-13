@@ -5,6 +5,7 @@
 ## **一键交换手中物品，不再需要打开物品栏拖放，省时省力。**  
 **One key, instant item swap. No more opening inventory and dragging items with the mouse.**
 
+![How to use this mod](https://cdn.modrinth.com/data/cached_images/865b1b78791f868a965525b1071bcf6842aef51d.gif)
 ---
 
 ## 使用方式 / How it works
@@ -34,6 +35,9 @@ The selected item will swap with the item you're currently holding. That's it!
 ---
 
 ## 未来计划 / Future plans
+
+- 低版本支持  
+  Support for older versions
 
 - 提供 API 接口，方便开发附属模组  
   Provide an API for add-ons
