@@ -1,0 +1,18 @@
+modLoader="javafml"
+loaderVersion="[1,)"
+license="MIT"
+
+[[mods]]
+modId="susinstantswap"
+version="1.0.0"
+displayName="Su's Instant Swap"
+logoFile="susinstantswap/icon.png"
+authors="Su_Crispy"
+description="探囊取物 (Su's Instant Swap)：只需一个按键，就可拿出想要的物品。长按左Alt键打开背包，松开时将悬停物品与手持物品交换。支持创造、生存、冒险全部游戏模式。"
+
+[[dependencies.susinstantswap]]
+modId="neoforge"
+type="required"
+versionRange="[21.1,)"
+ordering="NONE"
+side="CLIENT"

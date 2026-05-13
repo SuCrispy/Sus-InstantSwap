@@ -1,0 +1,35 @@
+plugins {
+    id 'java'
+    id 'net.neoforged.moddev' version '1.0.0'
+}
+
+base {
+    archivesName = 'Sus_InstantSwap-1.0.0-NF1.21+'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+neoForge {
+    version = project.neo_version
+
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+        }
+    }
+
+    accessTransformers {
+        file('src/main/resources/META-INF/accesstransformer.cfg')
+    }
+}
+
+jar {
+    archiveVersion = ''
+}
