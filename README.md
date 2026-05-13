@@ -39,6 +39,9 @@ The selected item will swap with the item you're currently holding. That's it!
 - 低版本支持  
   Support for older versions
 
+- 其他模组加载器支持  
+  Support for other mod loaders
+
 - 提供 API 接口，方便开发附属模组  
   Provide an API for add-ons
 
