@@ -45,8 +45,8 @@ The selected item will swap with the item you're currently holding. That's it!
 
 ## 其他 / About
 
-完全由 AI 在 1.21.1 版本上开发，理论上兼容 1.21 之后的所有版本  
-Developed entirely by AI on version 1.21.1, theoretically compatible with all versions after 1.21
+完全由 AI 在 1.21.1 版本上开发，理论上兼容 1.21.1 之后的所有版本  
+Developed entirely by AI on version 1.21.1, theoretically compatible with all versions after 1.21.1
 
 开源协议：LGPL 3.0  
 License: LGPL 3.0
