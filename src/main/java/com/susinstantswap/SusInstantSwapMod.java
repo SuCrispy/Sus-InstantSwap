@@ -8,7 +8,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 
-@Mod(value = "susinstantswap")
+@Mod(value = "susinstantswap", dist = Dist.CLIENT)
 public class SusInstantSwapMod {
 
     public static final String MOD_ID = "susinstantswap";
