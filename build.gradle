@@ -26,6 +26,12 @@ neoForge {
         }
     }
 
+    mods {
+        susinstantswap {
+            sourceSet(sourceSets.main)
+        }
+    }
+
     accessTransformers {
         file('src/main/resources/META-INF/accesstransformer.cfg')
     }
