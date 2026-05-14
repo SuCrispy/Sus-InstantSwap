@@ -4,7 +4,7 @@ license="LGPL-3.0"
 
 [[mods]]
 modId="susinstantswap"
-version="1.0.0"
+version="1.0.1"
 displayName="Su's Instant Swap"
 logoFile="susinstantswap/icon.png"
 authors="Su_Crispy"
@@ -13,6 +13,6 @@ description="探囊取物 (Su's Instant Swap)：只需一个按键，就可拿�
 [[dependencies.susinstantswap]]
 modId="neoforge"
 type="required"
-versionRange="[21.1,)"
+versionRange="[21.0,21.2)"
 ordering="NONE"
 side="CLIENT"

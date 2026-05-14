@@ -4,13 +4,14 @@ plugins {
 }
 
 base {
-    archivesName = 'Sus_InstantSwap-1.0.0-NF1.21+'
+    archivesName = 'Sus_InstantSwap-1.0.1-NF1.21+'
 }
 
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
+    compileJava.options.encoding = 'UTF-8'
 }
 
 neoForge {
