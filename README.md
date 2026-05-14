@@ -52,7 +52,7 @@ The selected item will swap with the item you're currently holding. That's it!
 
 ## 其他 / About
 
-完全由 AI 开发
+完全由 AI 开发  
 Developed entirely by AI
 
 开源协议：LGPL 3.0  
