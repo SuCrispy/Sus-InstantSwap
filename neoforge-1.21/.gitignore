@@ -1,0 +1,23 @@
+# Gradle
+.gradle/
+build/
+bin/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Compiled mod JAR (download from Releases page)
+*.jar
+
+# Logo variants (keep only Logo.png and Logo_512.png)
+Logo_Origin.png

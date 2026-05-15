@@ -1,0 +1,22 @@
+# Gradle
+**/build/
+**/.gradle/
+**/run/
+**/logs/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Mod artifacts (keep only in releases/)
+*.jar

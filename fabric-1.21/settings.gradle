@@ -1,0 +1,16 @@
+pluginManagement {
+	repositories {
+		maven {
+			name = 'Fabric'
+			url = 'https://maven.fabricmc.net/'
+		}
+		maven {
+			name = 'Tencent Mirror'
+			url = 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/'
+		}
+		mavenCentral()
+		gradlePluginPortal()
+	}
+}
+
+rootProject.name = 'Sus_InstantSwap_Fabric1.21'
