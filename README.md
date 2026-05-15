@@ -20,9 +20,9 @@ Download the JAR for your platform from [Releases](https://github.com/SuCrispy/S
 
 | Loader   | MC      | File                                        |
 |----------|---------|---------------------------------------------|
-| NeoForge | 1.21.1  | `Sus_InstantSwap-NeoForge-1.21-1.0.3.jar`   |
-| Fabric   | 1.21.1  | `Sus_InstantSwap-Fabric-1.21-1.0.3.jar`     |
-| Fabric   | 1.20.1  | `Sus_InstantSwap-Fabric-1.20-1.0.3.jar`     |
+| NeoForge | 1.21.1  | `Sus_InstantSwap-1.0.3-NF1.21.jar`   |
+| Fabric   | 1.21.1  | `Sus_InstantSwap-1.0.3-Fabric1.21.jar` |
+| Fabric   | 1.20.1  | `Sus_InstantSwap-1.0.3-Fabric1.20.jar` |
 
 ## Building / 构建
 
