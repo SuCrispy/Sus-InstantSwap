@@ -4,7 +4,7 @@ plugins {
 }
 
 base {
-    archivesName = 'Sus_InstantSwap-1.0.2-NF1.21+'
+    archivesName = 'Sus_InstantSwap-1.0.3-NF1.21+'
 }
 
 java {
