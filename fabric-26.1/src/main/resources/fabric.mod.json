@@ -1,0 +1,27 @@
+{
+	"schemaVersion": 1,
+	"id": "susinstantswap",
+	"version": "${version}",
+	"name": "Su's Instant Swap",
+	"description": "Hold a key to open your inventory; release over a slot to instantly swap it with your hotbar selection.",
+	"authors": [
+		"Su_Crispy"
+	],
+	"contact": {
+		"sources": "https://github.com/SuCrispy/Sus-InstantSwap"
+	},
+	"license": "LGPL-3.0",
+	"icon": "assets/susinstantswap/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"com.susinstantswap.SusInstantSwapMod"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.2",
+		"minecraft": ">=26.1 <=26.1.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
