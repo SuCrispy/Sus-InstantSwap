@@ -4,51 +4,27 @@ plugins {
 }
 
 base {
-    archivesName = 'Sus_InstantSwap-1.3.0-NF26.1'
+    archivesName = 'Sus_InstantSwap-2.0.0-NF26.1'
 }
 
 repositories {
-    maven {
-        name = "NeoForge Mirror"
-        url = "https://neoforged.forgecdn.net/releases/"
-    }
-    maven {
-        name = "Tencent Mirror"
-        url = "https://mirrors.cloud.tencent.com/nexus/repository/maven-public/"
-    }
+    maven { name = "NeoForge Mirror"; url = "https://neoforged.forgecdn.net/releases/" }
+    maven { name = "Tencent Mirror"; url = "https://mirrors.cloud.tencent.com/nexus/repository/maven-public/" }
     mavenCentral()
 }
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
-    }
+    toolchain { languageVersion = JavaLanguageVersion.of(25) }
     compileJava.options.encoding = 'UTF-8'
 }
 
 neoForge {
     version = project.neo_version
-
-    runs {
-        client {
-            client()
-        }
-        server {
-            server()
-        }
-    }
-
-    mods {
-        susinstantswap {
-            sourceSet(sourceSets.main)
-        }
-    }
-
-    accessTransformers {
-        file('src/main/resources/META-INF/accesstransformer.cfg')
-    }
+    runs { client { client() }; server { server() } }
+    mods { susinstantswap { sourceSet(sourceSets.main) } }
+    accessTransformers { file('src/main/resources/META-INF/accesstransformer.cfg') }
 }
 
-jar {
-    archiveVersion = ''
-}
+dependencies { annotationProcessor 'org.spongepowered:mixin:0.8.7:processor' }
+
+jar { archiveVersion = '' }
