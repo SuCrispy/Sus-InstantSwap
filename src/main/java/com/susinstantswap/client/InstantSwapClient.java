@@ -199,7 +199,14 @@ public class InstantSwapClient {
         if (keyDown && SwapConfig.guiSwapEnabledRuntime) {
             if ((isGuiSwapKey || (isInventoryKey && SWAP_IN_GUI_KEY.isUnbound()))
                     && mc.screen instanceof AbstractContainerScreen) {
-                performSwap(mc);
+                if (performSwap(mc)) {
+                    // Forge timing: onKeyInput and onClientTick(END) fire in the SAME tick,
+                    // so closePendingTicks=1 would be consumed immediately (0 real delay).
+                    // Ensure minimum 2 ticks to give the server time to process the swap.
+                    if (SwapKeyState.closePendingTicks > 0 && SwapKeyState.closePendingTicks < 2) {
+                        SwapKeyState.closePendingTicks = 2;
+                    }
+                }
             }
         }
     }
@@ -343,6 +350,11 @@ public class InstantSwapClient {
         int csi = hs.getContainerSlot();
         if (cs.isInventoryOpen() && (csi == 45 || (csi >= 5 && csi <= 8))) {
             debugLog("  branch=CREATIVE_EQUIP csi=" + csi + " sel=" + sel);
+            // Slot type validation — reject items that don't fit the equipment slot
+            if (!handStack.isEmpty() && !hs.mayPlace(handStack)) {
+                debugLog("  mayPlace rejected -> false");
+                return false;
+            }
             // Armor type validation
             if (csi <= 8 && !handStack.isEmpty()) {
                 EquipmentSlot expected = csi == 5 ? EquipmentSlot.HEAD :
