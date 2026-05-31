@@ -20,7 +20,7 @@ public class SwapConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(SwapConfig.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().excludeFieldsWithoutExposeAnnotation().create();
 
-    @Expose public boolean longPressMode = true;
+    @Expose public boolean modEnabled = true;
     @Expose public int holdThresholdMs = 200;
     @Expose public boolean soundEnabled = true;
     @Expose public boolean mouseReposition = true;
@@ -45,14 +45,15 @@ public class SwapConfig {
         if (file.exists()) {
             try (Reader reader = new FileReader(file)) {
                 INSTANCE = GSON.fromJson(reader, SwapConfig.class);
-                LOGGER.info("[SusInstantSwap] 配置已加载: longPressMode={}, holdThresholdMs={}, soundEnabled={}, mouseReposition={}, guiSwapEnabled={}, emptySlotSwapEnabled={}, debug={}",
-                        INSTANCE.longPressMode, INSTANCE.holdThresholdMs, INSTANCE.soundEnabled, INSTANCE.mouseReposition, INSTANCE.guiSwapEnabled, INSTANCE.emptySlotSwapEnabled, INSTANCE.debug);
+                LOGGER.info("[SusInstantSwap] Config loaded: modEnabled={}, holdThresholdMs={}, sound={}, mouse={}, guiSwap={}, emptySwap={}, debug={}",
+                        INSTANCE.modEnabled, INSTANCE.holdThresholdMs, INSTANCE.soundEnabled,
+                        INSTANCE.mouseReposition, INSTANCE.guiSwapEnabled, INSTANCE.emptySlotSwapEnabled, INSTANCE.debug);
             } catch (Exception e) {
-                LOGGER.warn("[SusInstantSwap] 配置加载失败，使用默认值: {}", e.getMessage());
+                LOGGER.warn("[SusInstantSwap] Config load failed, using defaults: {}", e.getMessage());
             }
         } else {
             save();
-            LOGGER.info("[SusInstantSwap] 已创建默认配置文件");
+            LOGGER.info("[SusInstantSwap] Created default config file");
         }
     }
 
@@ -64,7 +65,7 @@ public class SwapConfig {
                 GSON.toJson(INSTANCE, writer);
             }
         } catch (Exception e) {
-            LOGGER.warn("[SusInstantSwap] 配置保存失败: {}", e.getMessage());
+            LOGGER.warn("[SusInstantSwap] Config save failed: {}", e.getMessage());
         }
     }
 }
