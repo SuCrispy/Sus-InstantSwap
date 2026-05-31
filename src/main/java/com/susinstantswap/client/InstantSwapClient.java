@@ -299,9 +299,15 @@ public class InstantSwapClient {
     }
 
     // ── Creative swap (FG6 AT unreliable, use reflection for SlotWrapper/CONTAINER) ──
-    // ⚠️ BRANCH ORDER MATTERS: On Forge, SlotWrapper.getContainerSlot() is NOT overridden
-    // and returns screen position (0-8) which overlaps with CREATIVE_EQUIP csi 5-8.
-    // Therefore SlotWrapper MUST come BEFORE CREATIVE_EQUIP in the branch order.
+    // Branch order (must match NF 1.21.1):
+    //   1. CONTAINER (creative tab item grid)
+    //   2. CREATIVE_EQUIP (armor/offhand, isInventoryOpen=true, swTarget==null guard)
+    //   3. SlotWrapper (hotbar slots, swTarget!=null)
+    //   4. REGULAR (fallback hotbar slots)
+    // On Forge, SlotWrapper.getContainerSlot() returns screen pos (0-8), overlapping
+    // with equipment csi 5-8. The swTarget==null guard in CREATIVE_EQUIP ensures
+    // equipment slots (not SlotWrappers) enter CREATIVE_EQUIP, while hotbar
+    // SlotWrappers fall through to the SlotWrapper branch.
 
     private static boolean creativeSwap(Minecraft mc, CreativeModeInventoryScreen cs, int sel) {
         if (mc.gameMode == null) return false;
@@ -343,34 +349,14 @@ public class InstantSwapClient {
             return true;
         }
 
-        // ── SlotWrapper (hotbar slots on creative item tabs) ──
-        // ⚠️ MUST come before CREATIVE_EQUIP because Forge's SlotWrapper.getContainerSlot()
-        // is NOT overridden and returns screen position (0-8), which overlaps with csi 5-8.
-        if (swTarget != null) {
-            int t = swTarget.index;
-            debugLog("  branch=SlotWrapper t=" + t + " heldMenuIdx=" + heldIdx);
-            if (isPlayerInventorySlot(hs) && t != heldIdx) {
-                ItemStack ti = cs.getMenu().getSlot(t).getItem().copy();
-                ItemStack hi = cs.getMenu().getSlot(heldIdx).getItem().copy();
-                int invIdx = t >= menuHotbarStart ? t - menuHotbarStart : t;
-                debugLog("  ti=" + ti.getDisplayName().getString() + " hi=" + hi.getDisplayName().getString() + " invIdx=" + invIdx);
-                safeSet(mc, sel, ti);
-                mc.gameMode.handleCreativeModeItemAdd(ti, heldIdx);
-                debugLog("  safeSet(" + sel + ",ti) + addItem(" + heldIdx + ")");
-                safeSet(mc, invIdx, hi);
-                mc.gameMode.handleCreativeModeItemAdd(hi, t);
-                debugLog("  safeSet(" + invIdx + ",hi) + addItem(" + t + ")");
-                SwapKeyState.closePendingTicks = 1;
-                return true;
-            }
-            debugLog("  SKIP: sameSlot=" + (t==heldIdx) + " isPlayerInv=" + isPlayerInventorySlot(hs));
-            return false;
-        }
-
         // ── CREATIVE_EQUIP: csi=5-8 (armor) or 45 (offhand) ──
-        // ⚠️ Only applies on the inventory/survival tab (not creative item tabs)
+        // MUST come before SlotWrapper to ensure equipment slots enter here.
+        // On Forge, SlotWrapper.getContainerSlot() is NOT overridden (returns screen pos 0-8),
+        // so hotbar SlotWrappers at positions 5-8 would also match csi 5-8.
+        // Guard with swTarget==null to exclude SlotWrappers from this branch.
         int csi = hs.getContainerSlot();
-        if (cs.isInventoryOpen() && (csi == 45 || (csi >= 5 && csi <= 8))) {
+        if (cs.isInventoryOpen() && (csi == 45 || (csi >= 5 && csi <= 8))
+                && swTarget == null) {
             debugLog("  branch=CREATIVE_EQUIP csi=" + csi + " sel=" + sel);
             // Slot type validation — reject items that don't fit the equipment slot
             if (!handStack.isEmpty() && !hs.mayPlace(handStack)) {
@@ -393,6 +379,28 @@ public class InstantSwapClient {
             debugLog("  handleInventoryMouseClick(slot=" + csi + " hotbar=" + sel + " SWAP)");
             SwapKeyState.closePendingTicks = 1;
             return true;
+        }
+
+        // ── SlotWrapper (hotbar slots on creative item tabs) ──
+        if (swTarget != null) {
+            int t = swTarget.index;
+            debugLog("  branch=SlotWrapper t=" + t + " heldMenuIdx=" + heldIdx);
+            if (isPlayerInventorySlot(hs) && t != heldIdx) {
+                ItemStack ti = cs.getMenu().getSlot(t).getItem().copy();
+                ItemStack hi = cs.getMenu().getSlot(heldIdx).getItem().copy();
+                int invIdx = t >= menuHotbarStart ? t - menuHotbarStart : t;
+                debugLog("  ti=" + ti.getDisplayName().getString() + " hi=" + hi.getDisplayName().getString() + " invIdx=" + invIdx);
+                safeSet(mc, sel, ti);
+                mc.gameMode.handleCreativeModeItemAdd(ti, heldIdx);
+                debugLog("  safeSet(" + sel + ",ti) + addItem(" + heldIdx + ")");
+                safeSet(mc, invIdx, hi);
+                mc.gameMode.handleCreativeModeItemAdd(hi, t);
+                debugLog("  safeSet(" + invIdx + ",hi) + addItem(" + t + ")");
+                SwapKeyState.closePendingTicks = 1;
+                return true;
+            }
+            debugLog("  SKIP: sameSlot=" + (t==heldIdx) + " isPlayerInv=" + isPlayerInventorySlot(hs));
+            return false;
         }
 
         // ── REGULAR (fallback hotbar slots) ──
