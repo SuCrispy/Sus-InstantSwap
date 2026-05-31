@@ -11,14 +11,15 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Intercepts Screen.keyPressed() for the inventory key on any
- * AbstractContainerScreen.
+ * Intercepts Screen.keyPressed() for the inventory key AND the GUI swap key
+ * on any AbstractContainerScreen.
  *
- * Two scenarios:
- *   - REPEAT (inventoryKeyHeld already true): Block close to prevent
- *       flicker during long press. The screen stays open while the key is held.
- *   - FRESH press (inventoryKeyHeld false): Try GUI swap first.
- *       If not, let vanilla handle normally (E closes the screen).
+ * Three scenarios:
+ *   - GUI SWAP KEY (bound + pressed): Perform swap directly, block vanilla.
+ *   - REPEAT E (inventoryKeyHeld already true): Block close to prevent
+ *       flicker during long press.
+ *   - FRESH E (inventoryKeyHeld false): Try GUI swap first (unbound key fallback).
+ *       If not, let vanilla handle normally.
  */
 @Mixin(value = AbstractContainerScreen.class, remap = false)
 public class ScreenKeyMixin {
@@ -31,6 +32,14 @@ public class ScreenKeyMixin {
         if (mc == null || mc.options == null) return;
 
         InputConstants.Key pressed = InputConstants.getKey(keyCode, scanCode);
+
+        // ── GUI swap key (bound) → perform swap directly ──
+        if (InstantSwapClient.tryPerformGuiSwap((AbstractContainerScreen<?>) (Object) this, pressed)) {
+            cir.setReturnValue(true);
+            return;
+        }
+
+        // ── Inventory key (E) handling ──
         if (!pressed.equals(mc.options.keyInventory.getKey())) return;
 
         if (SwapKeyState.inventoryKeyHeld) {
@@ -38,11 +47,6 @@ public class ScreenKeyMixin {
             cir.setReturnValue(false);
             return;
         }
-
-        // Fresh press — try GUI swap, otherwise let vanilla handle
-        if (InstantSwapClient.tryPerformGuiSwap((AbstractContainerScreen<?>) (Object) this)) {
-            cir.setReturnValue(true);
-        }
-        // If GUI swap didn't fire: don't intercept — let vanilla close the screen
+        // Fresh press — let vanilla handle (E opens/closes inventory)
     }
 }

@@ -173,7 +173,8 @@ public class InstantSwapClient {
         }
     }
 
-    // ── InputEvent: GUI swap + text protection ──
+    // ── InputEvent: EditBox protection only ──
+    // GUI swap is handled via ScreenKeyMixin (reliable, no Forge event bus dependency).
 
     @SubscribeEvent
     public static void onKeyInput(InputEvent.Key event) {
@@ -185,39 +186,60 @@ public class InstantSwapClient {
 
         boolean keyDown = (action == GLFW.GLFW_PRESS);
         boolean isInventoryKey = isInventoryKeyEvent(mc, event);
-        boolean isGuiSwapKey = SWAP_IN_GUI_KEY.isUnbound() ? false : isGuiSwapKeyEvent(event);
 
-        // EditBox protection: consume click so swap keys don't close screen
+        // EditBox protection: consume click so E key doesn't close screen
         if (keyDown && isInventoryKey && mc.screen != null && hasEditBoxFocus(mc.screen)) {
             while (mc.options.keyInventory.consumeClick()) {}
             if (mc.screen instanceof AbstractContainerScreen) {
                 if (mc.player.containerMenu.getSlot(0).hasItem()) return;
             } else return;
         }
-
-        // GUI swap
-        if (keyDown && SwapConfig.guiSwapEnabledRuntime) {
-            if ((isGuiSwapKey || (isInventoryKey && SWAP_IN_GUI_KEY.isUnbound()))
-                    && mc.screen instanceof AbstractContainerScreen) {
-                if (performSwap(mc)) {
-                    // Forge timing: onKeyInput and onClientTick(END) fire in the SAME tick,
-                    // so closePendingTicks=1 would be consumed immediately (0 real delay).
-                    // Ensure minimum 2 ticks to give the server time to process the swap.
-                    if (SwapKeyState.closePendingTicks > 0 && SwapKeyState.closePendingTicks < 2) {
-                        SwapKeyState.closePendingTicks = 2;
-                    }
-                }
-            }
-        }
     }
 
     // ── GUI swap entry (from ScreenKeyMixin) ──
+    // Handles BOTH bound SWAP_IN_GUI_KEY presses AND E key fallback (when unbound).
 
-    public static boolean tryPerformGuiSwap(AbstractContainerScreen<?> screen) {
+    public static boolean tryPerformGuiSwap(AbstractContainerScreen<?> screen, InputConstants.Key pressedKey) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.gameMode == null) return false;
-        if (!SwapConfig.guiSwapEnabledRuntime || !SWAP_IN_GUI_KEY.isUnbound()) return false;
-        return performSwap(mc);
+        if (!SwapConfig.guiSwapEnabledRuntime) return false;
+
+        boolean isEKey = pressedKey.equals(mc.options.keyInventory.getKey());
+        boolean isBoundGuiSwapKey = !SWAP_IN_GUI_KEY.isUnbound()
+                && pressedKey.getType() == SWAP_IN_GUI_KEY.getKey().getType()
+                && pressedKey.getValue() == SWAP_IN_GUI_KEY.getKey().getValue();
+
+        // Bound GUI swap key: always triggers swap
+        if (isBoundGuiSwapKey) {
+            debugLog("GUI swap via bound key");
+            if (performSwap(mc)) {
+                // Forge timing: ensure at least 2 ticks for server sync
+                if (SwapKeyState.closePendingTicks < 2) {
+                    SwapKeyState.closePendingTicks = 2;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        // E key when SWAP_IN_GUI_KEY is unbound: triggers swap
+        if (isEKey && SWAP_IN_GUI_KEY.isUnbound()) {
+            debugLog("GUI swap via E key (unbound fallback)");
+            if (performSwap(mc)) {
+                if (SwapKeyState.closePendingTicks < 2) {
+                    SwapKeyState.closePendingTicks = 2;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        return false;
+    }
+
+    // Backward compat: original no-key signature (used by nothing now, but kept for safety)
+    public static boolean tryPerformGuiSwap(AbstractContainerScreen<?> screen) {
+        return tryPerformGuiSwap(screen, Minecraft.getInstance().options.keyInventory.getKey());
     }
 
     @SubscribeEvent
@@ -445,12 +467,6 @@ public class InstantSwapClient {
     private static boolean isInventoryKeyEvent(Minecraft mc, InputEvent.Key event) {
         InputConstants.Key ik = mc.options.keyInventory.getKey();
         return ik.getType() == InputConstants.Type.KEYSYM && event.getKey() == ik.getValue();
-    }
-
-    private static boolean isGuiSwapKeyEvent(InputEvent.Key event) {
-        if (SWAP_IN_GUI_KEY.isUnbound()) return false;
-        InputConstants.Key bk = SWAP_IN_GUI_KEY.getKey();
-        return bk.getType() == InputConstants.Type.KEYSYM && event.getKey() == bk.getValue();
     }
 
     private static boolean hasEditBoxFocus(Screen s) {
