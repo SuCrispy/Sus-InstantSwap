@@ -206,8 +206,7 @@ public class InstantSwapClient {
 
         boolean isEKey = pressedKey.equals(mc.options.keyInventory.getKey());
         boolean isBoundGuiSwapKey = !SWAP_IN_GUI_KEY.isUnbound()
-                && pressedKey.getType() == SWAP_IN_GUI_KEY.getKey().getType()
-                && pressedKey.getValue() == SWAP_IN_GUI_KEY.getKey().getValue();
+                && pressedKey.equals(SWAP_IN_GUI_KEY.getKey());
 
         // Bound GUI swap key: always triggers swap
         if (isBoundGuiSwapKey) {
@@ -222,11 +221,6 @@ public class InstantSwapClient {
         }
 
         return false;
-    }
-
-    // Backward compat: original no-key signature (used by nothing now, but kept for safety)
-    public static boolean tryPerformGuiSwap(AbstractContainerScreen<?> screen) {
-        return tryPerformGuiSwap(screen, Minecraft.getInstance().options.keyInventory.getKey());
     }
 
     @SubscribeEvent
@@ -289,7 +283,7 @@ public class InstantSwapClient {
     // Branch order (matches NF 1.21.1):
     //   1. CONTAINER (creative tab item grid)
     //   2. CREATIVE_EQUIP (armor/offhand, isInventoryOpen=true)
-    //   3. SlotWrapper (hotbar slots, swTarget.index=36-44)
+    //   3. SlotWrapper (non-equipment player inventory: hotbar 36-44, backpack 9-35)
     //   4. REGULAR (fallback hotbar slots)
     //
     // On Forge, SlotWrapper.getContainerSlot() returns screen position (0-8), NOT
