@@ -370,8 +370,9 @@ public class InstantSwapClient {
             return true;
         }
 
-        // ── SlotWrapper (hotbar slots, realCsi=36-44) ──
-        if (swTarget != null && realCsi >= menuHotbarStart && realCsi <= menuHotbarStart + hotbarSize - 1) {
+        // ── SlotWrapper (all non-equipment player inventory: hotbar 36-44, backpack 9-35) ──
+        // Equipment SlotWrappers (5-8/45) are handled by CREATIVE_EQUIP above.
+        if (swTarget != null && realCsi > 8 && realCsi != 45) {
             int t = swTarget.index;
             debugLog("  branch=SlotWrapper t=" + t + " heldMenuIdx=" + heldIdx);
             if (isPlayerInventorySlot(hs) && t != heldIdx) {
