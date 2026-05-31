@@ -1,13 +1,10 @@
 pluginManagement {
     repositories {
-        maven { url = 'https://maven.aliyun.com/repository/public/' }
-        maven { url = 'https://maven.aliyun.com/repository/gradle-plugin/' }
         gradlePluginPortal()
-        maven { url = 'https://maven.minecraftforge.net/' }
-        maven { url = 'https://maven.parchmentmc.org' }
+        maven { name = 'MinecraftForge'; url = 'https://maven.minecraftforge.net/' }
     }
 }
-
 plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '0.7.0'
 }
+rootProject.name = 'Sus_InstantSwap'
