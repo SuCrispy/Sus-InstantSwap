@@ -16,5 +16,6 @@
   "config.susinstantswap.emptySlotSwapEnabled": "空位交换",
   "config.susinstantswap.emptySlotSwapEnabled.tooltip": "悬停空槽位时也可执行交换。",
   "config.susinstantswap.debug": "调试日志",
-  "config.susinstantswap.debug.tooltip": "输出调试信息到游戏日志。"
+  "config.susinstantswap.debug.tooltip": "输出调试信息到游戏日志。",
+  "config.susinstantswap.holdThresholdMs.value": "长按判定阈值：%s 毫秒"
 }

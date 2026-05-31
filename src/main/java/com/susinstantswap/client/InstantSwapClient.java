@@ -33,7 +33,7 @@ import org.slf4j.Logger;
 
 /**
  * Sus-InstantSwap v2.0 — coexists with the vanilla inventory key.
- * Forge 1.21.1 — uses AT for CreativeModeInventoryScreen internals.
+ * Forge 1.21.1 — uses reflection for CreativeModeInventoryScreen internals (FG6 AT).
  */
 public class InstantSwapClient {
 
@@ -503,9 +503,5 @@ public class InstantSwapClient {
         } catch (Exception ignored) {
             return null;
         }
-    }
-
-    private static boolean isSlotWrapper(Slot slot) {
-        return slot.getClass().getSimpleName().equals("SlotWrapper");
     }
 }
