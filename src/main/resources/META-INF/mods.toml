@@ -1,26 +1,29 @@
 modLoader="javafml"
-loaderVersion="[52,)"
-license="LGPL-3.0"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
 
 [[mods]]
-modId="susinstantswap"
-side="CLIENT"
+modId="${mod_id}"
 version="${mod_version}"
-displayName="Su's Instant Swap"
+displayName="${mod_name}"
 logoFile="assets/susinstantswap/icon.png"
-authors="Su_Crispy"
-description="Hold a key to open your inventory; release over a slot to instantly swap it with your hotbar selection. Supports long/short press dual modes, GUI swap, survival/creative/adventure game modes."
+authors="${mod_authors}"
+description='''${mod_description}'''
+clientSideOnly=true
 
-[[dependencies.susinstantswap]]
+[[mixins]]
+config="susinstantswap.mixins.json"
+
+[[dependencies.${mod_id}]]
     modId="forge"
     mandatory=true
-    versionRange="[52,)"
+    versionRange="${forge_version_range}"
     ordering="NONE"
     side="CLIENT"
 
-[[dependencies.susinstantswap]]
+[[dependencies.${mod_id}]]
     modId="minecraft"
     mandatory=true
-    versionRange="[1.21,1.21.2)"
+    versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="CLIENT"
