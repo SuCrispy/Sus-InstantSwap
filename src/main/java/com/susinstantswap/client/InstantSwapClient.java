@@ -299,15 +299,18 @@ public class InstantSwapClient {
     }
 
     // ── Creative swap (FG6 AT unreliable, use reflection for SlotWrapper/CONTAINER) ──
-    // Branch order (must match NF 1.21.1):
+    // Branch order (matches NF 1.21.1):
     //   1. CONTAINER (creative tab item grid)
-    //   2. CREATIVE_EQUIP (armor/offhand, isInventoryOpen=true, swTarget==null guard)
-    //   3. SlotWrapper (hotbar slots, swTarget!=null)
+    //   2. CREATIVE_EQUIP (armor/offhand, isInventoryOpen=true)
+    //   3. SlotWrapper (hotbar slots, swTarget.index=36-44)
     //   4. REGULAR (fallback hotbar slots)
-    // On Forge, SlotWrapper.getContainerSlot() returns screen pos (0-8), overlapping
-    // with equipment csi 5-8. The swTarget==null guard in CREATIVE_EQUIP ensures
-    // equipment slots (not SlotWrappers) enter CREATIVE_EQUIP, while hotbar
-    // SlotWrappers fall through to the SlotWrapper branch.
+    //
+    // On Forge, SlotWrapper.getContainerSlot() returns screen position (0-8), NOT
+    // the target index. Equipment slots in the inventory tab ARE SlotWrapper objects.
+    // We use swTarget.index (the wrapped slot's real index) as the definitive
+    // slot position, which correctly separates:
+    //   - Equipment SlotWrapper: swTarget.index = 5-8 (armor) or 45 (offhand)
+    //   - Hotbar SlotWrapper:    swTarget.index = 36-44
 
     private static boolean creativeSwap(Minecraft mc, CreativeModeInventoryScreen cs, int sel) {
         if (mc.gameMode == null) return false;
@@ -320,10 +323,12 @@ public class InstantSwapClient {
         ItemStack handStack = mc.player.getInventory().getItem(sel);
 
         Slot swTarget = getSlotWrapperTarget(hs);
+        // Use target slot index for SlotWrappers (Forge getContainerSlot returns screen pos!)
+        int realCsi = (swTarget != null) ? swTarget.index : hs.getContainerSlot();
         debugLog("creativeSwap ENTER: sel=" + sel + " hand=" + (handStack.isEmpty()?"EMPTY":handStack.getDisplayName().getString())
                 + " hs.container=" + (hs.container==getCreativeContainer()?"CONTAINER":hs.container==mc.player.getInventory()?"PLAYER_INV":
                   swTarget!=null?"SlotWrapper("+swTarget.index+")":"OTHER")
-                + " hs.index=" + hs.index + " csi=" + hs.getContainerSlot());
+                + " hs.index=" + hs.index + " realCsi=" + realCsi + " rawCsi=" + hs.getContainerSlot());
 
         // ── CONTAINER (creative tab item grid) ──
         if (hs.container == getCreativeContainer()) {
@@ -349,25 +354,22 @@ public class InstantSwapClient {
             return true;
         }
 
-        // ── CREATIVE_EQUIP: csi=5-8 (armor) or 45 (offhand) ──
-        // MUST come before SlotWrapper to ensure equipment slots enter here.
-        // On Forge, SlotWrapper.getContainerSlot() is NOT overridden (returns screen pos 0-8),
-        // so hotbar SlotWrappers at positions 5-8 would also match csi 5-8.
-        // Guard with swTarget==null to exclude SlotWrappers from this branch.
-        int csi = hs.getContainerSlot();
-        if (cs.isInventoryOpen() && (csi == 45 || (csi >= 5 && csi <= 8))
-                && swTarget == null) {
-            debugLog("  branch=CREATIVE_EQUIP csi=" + csi + " sel=" + sel);
+        // ── CREATIVE_EQUIP: realCsi=5-8 (armor) or 45 (offhand) ──
+        // Uses realCsi (target slot index) which works identically on NF and Forge.
+        // On NF, SlotWrapper.getContainerSlot() returns target index naturally.
+        // On Forge, we use swTarget.index for SlotWrappers as the equivalent.
+        if (cs.isInventoryOpen() && (realCsi == 45 || (realCsi >= 5 && realCsi <= 8))) {
+            debugLog("  branch=CREATIVE_EQUIP realCsi=" + realCsi + " sel=" + sel);
             // Slot type validation — reject items that don't fit the equipment slot
             if (!handStack.isEmpty() && !hs.mayPlace(handStack)) {
                 debugLog("  mayPlace rejected -> false");
                 return false;
             }
-            // Armor type validation
-            if (csi <= 8 && !handStack.isEmpty()) {
-                EquipmentSlot expected = csi == 5 ? EquipmentSlot.HEAD :
-                                        csi == 6 ? EquipmentSlot.CHEST :
-                                        csi == 7 ? EquipmentSlot.LEGS : EquipmentSlot.FEET;
+            // Armor type validation (only for armor slots, not offhand)
+            if (realCsi <= 8 && !handStack.isEmpty()) {
+                EquipmentSlot expected = realCsi == 5 ? EquipmentSlot.HEAD :
+                                        realCsi == 6 ? EquipmentSlot.CHEST :
+                                        realCsi == 7 ? EquipmentSlot.LEGS : EquipmentSlot.FEET;
                 EquipmentSlot actual = mc.player.getEquipmentSlotForItem(handStack);
                 if (!actual.isArmor() || actual != expected) {
                     debugLog("  armor mismatch: expected=" + expected + " actual=" + actual + " -> false");
@@ -375,14 +377,14 @@ public class InstantSwapClient {
                 }
             }
             mc.gameMode.handleInventoryMouseClick(
-                cs.getMenu().containerId, csi, sel, ClickType.SWAP, mc.player);
-            debugLog("  handleInventoryMouseClick(slot=" + csi + " hotbar=" + sel + " SWAP)");
+                cs.getMenu().containerId, realCsi, sel, ClickType.SWAP, mc.player);
+            debugLog("  handleInventoryMouseClick(slot=" + realCsi + " hotbar=" + sel + " SWAP)");
             SwapKeyState.closePendingTicks = 1;
             return true;
         }
 
-        // ── SlotWrapper (hotbar slots on creative item tabs) ──
-        if (swTarget != null) {
+        // ── SlotWrapper (hotbar slots, realCsi=36-44) ──
+        if (swTarget != null && realCsi >= menuHotbarStart && realCsi <= menuHotbarStart + hotbarSize - 1) {
             int t = swTarget.index;
             debugLog("  branch=SlotWrapper t=" + t + " heldMenuIdx=" + heldIdx);
             if (isPlayerInventorySlot(hs) && t != heldIdx) {
@@ -403,7 +405,7 @@ public class InstantSwapClient {
             return false;
         }
 
-        // ── REGULAR (fallback hotbar slots) ──
+        // ── REGULAR (fallback hotbar slots, non-SlotWrapper) ──
         int c2 = hs.getContainerSlot();
         debugLog("  branch=REGULAR c2=" + c2);
         if (c2 >= 0 && c2 < hotbarSize && c2 != sel) {
