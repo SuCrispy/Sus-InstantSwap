@@ -212,26 +212,13 @@ public class InstantSwapClient {
         // Bound GUI swap key: always triggers swap
         if (isBoundGuiSwapKey) {
             debugLog("GUI swap via bound key");
-            if (performSwap(mc)) {
-                // Forge timing: ensure at least 2 ticks for server sync
-                if (SwapKeyState.closePendingTicks < 2) {
-                    SwapKeyState.closePendingTicks = 2;
-                }
-                return true;
-            }
-            return false;
+            return performSwap(mc);
         }
 
         // E key when SWAP_IN_GUI_KEY is unbound: triggers swap
         if (isEKey && SWAP_IN_GUI_KEY.isUnbound()) {
             debugLog("GUI swap via E key (unbound fallback)");
-            if (performSwap(mc)) {
-                if (SwapKeyState.closePendingTicks < 2) {
-                    SwapKeyState.closePendingTicks = 2;
-                }
-                return true;
-            }
-            return false;
+            return performSwap(mc);
         }
 
         return false;
