@@ -61,7 +61,7 @@ public class InstantSwapClient {
 
     // ── Container opened via right-click → reposition cursor ──
     // Tracked by PlayerInteractEvent to avoid repositioning for keybind-opened
-    // screens (Curios, cosmetic armor, etc.)
+    // screens.
 
     private static boolean screenOpenedByInteract = false;
 
@@ -101,7 +101,7 @@ public class InstantSwapClient {
         if (config.guiSwapEnabled.get() && isGuiSwapUnbound()
                 && mc.screen instanceof AbstractContainerScreen) {
             if (performSwap(mc)) {
-                SwapKeyState.closePendingTicks = 1;
+                SwapKeyState.closePendingTicks = isInventoryScreen(mc.screen) ? 1 : 2;
                 event.setCanceled(true);
             }
         }
@@ -177,7 +177,7 @@ public class InstantSwapClient {
             if (mc.screen == null) { state = SwapState.IDLE; return; }
             if (!isInventoryKeyPhysicallyDown(mc) || !SwapKeyState.inventoryKeyHeld) {
                 performSwap(mc);
-                SwapKeyState.closePendingTicks = 1;
+                SwapKeyState.closePendingTicks = isInventoryScreen(mc.screen) ? 1 : 2;
                 state = SwapState.IDLE;
             }
         }
@@ -210,7 +210,7 @@ public class InstantSwapClient {
             // Dedicated GUI swap key only — inventory key handled by onScreenKeyPressed
             if (isGuiSwapKey && mc.screen instanceof AbstractContainerScreen) {
                 if (performSwap(mc)) {
-                    SwapKeyState.closePendingTicks = 1;
+                    SwapKeyState.closePendingTicks = isInventoryScreen(mc.screen) ? 1 : 2;
                 }
             }
         }
@@ -223,7 +223,7 @@ public class InstantSwapClient {
         if (mc.player == null || mc.gameMode == null) return false;
         if (!config.guiSwapEnabled.get() || !isGuiSwapUnbound()) return false;
         if (performSwap(mc)) {
-            SwapKeyState.closePendingTicks = 1;
+            SwapKeyState.closePendingTicks = isInventoryScreen(mc.screen) ? 1 : 2;
             return true;
         }
         return false;
@@ -239,44 +239,48 @@ public class InstantSwapClient {
     }
 
     // ── Unified swap (GUI + long press) ──
+    //
+    // Gatekeeper: categorises screens and decides which slots are swappable.
+    //
+    // All slots are allowed provided the items are mutually placeable
+    // (itemsCompatible) and the slot permits pickup (mayPickup in containerSwap).
+    // Auto-close only for the player's own inventory screens.
 
     private static boolean performSwap(Minecraft mc) {
         if (!(mc.screen instanceof AbstractContainerScreen<?> screen)) return false;
         Slot hs = screen.getSlotUnderMouse();
         if (hs == null || (!hs.hasItem() && !config.emptySlotSwapEnabled.get())) return false;
 
-        // Equipment slots (armor, offhand) — never swappable.
-        // Creative screen uses different containerSlot for armor than survival.
-        int csi = hs.getContainerSlot();
-        boolean isEquip = csi >= 36;                            // survival armor+offhand
-        if (!isEquip && isPlayerInventorySlot(hs) && csi >= 5 && csi < 9)
-            isEquip = true;                                      // creative-mode armor
-        if (isEquip) return false;
-
         int sel = mc.player.getInventory().getSelectedSlot();
+        // Both slots empty → nothing to swap, no sound
+        if (!hs.hasItem() && mc.player.getInventory().getItem(sel).isEmpty()) return false;
         boolean creative = mc.player.hasInfiniteMaterials();
 
-        // ── Slot compatibility: mayPlace in both directions ──
-        ItemStack hotbarStack = mc.player.getInventory().getItem(sel);
-        if (!hotbarStack.isEmpty() && !hs.mayPlace(hotbarStack)) return false;
-        if (hs.hasItem()) {
-            int hotbarMenuIdx = screen.getMenu().slots.size() - 9 + sel;
-            Slot hotbarSlot = screen.getMenu().getSlot(hotbarMenuIdx);
-            if (!hotbarSlot.mayPlace(hs.getItem())) return false;
-        }
+        // Equipment slots (armor, offhand) — never swappable
+        if (isEquipSlot(hs)) return false;
 
-        // Creative inventory → special handling
+        // ── Creative inventory ──
         if (screen instanceof CreativeModeInventoryScreen cs) {
             if (!creative) return false;
+            debugLog("performSwap creative sel=" + sel + " hasItem=" + hs.hasItem());
             if (creativeSwap(mc, cs, sel)) { playSwapSound(mc); return true; }
             return false;
         }
 
-        // Player inventory → restrict to backpack + non-selected hotbar
-        if (screen instanceof InventoryScreen && (!isPlayerInventorySlot(hs) || hs.index == hotbarMenuSlot(sel)))
+        // ── Survival inventory ──
+        if (screen instanceof InventoryScreen) {
+            if (hs.getContainerSlot() == sel) return false;
+            if (!itemsCompatible(hs, screen, mc, sel)) return false;
+            if (containerSwap(screen, hs.index, sel)) {
+                playSwapSound(mc);
+                return true;
+            }
             return false;
+        }
 
-        // All containers → SWAP packet
+        // ── Other containers (chest, furnace, hopper, vehicle, etc.) ──
+        if (!itemsCompatible(hs, screen, mc, sel)) return false;
+
         if (containerSwap(screen, hs.index, sel)) {
             playSwapSound(mc);
             return true;
@@ -284,17 +288,32 @@ public class InstantSwapClient {
         return false;
     }
 
+    /**
+     * Bidirectional mayPlace check — avoids starting a swap that the server will reject.
+     * Not needed for creative mode (handleCreativeModeItemAdd bypasses mayPlace).
+     */
+    private static boolean itemsCompatible(Slot hs, AbstractContainerScreen<?> screen,
+                                            Minecraft mc, int sel) {
+        ItemStack hotbarStack = mc.player.getInventory().getItem(sel);
+        if (!hotbarStack.isEmpty() && !hs.mayPlace(hotbarStack)) return false;
+        if (hs.hasItem()) {
+            int hotbarMenuIdx = screen.getMenu().slots.size() - 9 + sel;
+            Slot hotbarSlot = screen.getMenu().getSlot(hotbarMenuIdx);
+            if (!hotbarSlot.mayPlace(hs.getItem())) return false;
+        }
+        return true;
+    }
+
     private static boolean containerSwap(AbstractContainerScreen<?> s, int slotIdx, int hotbar) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.getConnection() == null) return false;
 
+        // Pre-check: skip if slot doesn't allow pickup
+        Slot slot = s.getMenu().getSlot(slotIdx);
+        if (slot != null && !slot.mayPickup(mc.player)) return false;
+
         int containerId = s.getMenu().containerId;
         int stateId = s.getMenu().getStateId();
-
-        ItemStack hoveredItem = s.getMenu().getSlot(slotIdx).getItem().copy();
-        ItemStack hotbarItem = mc.player.getInventory().getItem(hotbar).copy();
-        s.getMenu().getSlot(slotIdx).set(hotbarItem);
-        mc.player.getInventory().setItem(hotbar, hoveredItem);
 
         Int2ObjectOpenHashMap<HashedStack> cs = new Int2ObjectOpenHashMap<>();
         mc.getConnection().send(new ServerboundContainerClickPacket(
@@ -303,66 +322,64 @@ public class InstantSwapClient {
         return true;
     }
 
-    // ── Creative mode swap (CONTAINER tabs + inventory slots) ──
+    // ── Creative mode swap (called only for CONTAINER tabs + player storage) ──
 
     private static boolean creativeSwap(Minecraft mc, CreativeModeInventoryScreen cs, int sel) {
         if (mc.gameMode == null) return false;
         Slot hs = cs.getSlotUnderMouse();
         if (hs == null || (!hs.hasItem() && !config.emptySlotSwapEnabled.get())) return false;
 
-        int hotbarSize = hotbarSize(mc);
         int menuHotbarStart = 36;
         int heldMenuSlot = menuHotbarStart + sel;
 
-        if (hs.container == CreativeModeInventoryScreen.CONTAINER) {
-            ItemStack held = mc.player.getInventory().getItem(sel).copy();
-            ItemStack item = hs.getItem().copyWithCount(1);
-            if (!held.isEmpty()) {
-                int f = freeSlot(mc);
-                if (f >= 0 && f < mc.player.getInventory().getContainerSize()) {
-                    mc.player.getInventory().setItem(f, held.copy());
-                    mc.gameMode.handleCreativeModeItemAdd(held.copy(), menuHotbarStart + f);
-                }
-            }
-            mc.player.getInventory().setItem(sel, item);
-            mc.gameMode.handleCreativeModeItemAdd(item, heldMenuSlot);
-            return true;
-        }
-
-        if (hs instanceof CreativeModeInventoryScreen.SlotWrapper w) {
-            int t = w.target.index;
-            if (isPlayerInventorySlot(w) && t != heldMenuSlot) {
-                ItemStack ti = cs.getMenu().getSlot(t).getItem().copy();
-                ItemStack hi = cs.getMenu().getSlot(heldMenuSlot).getItem().copy();
+        // ── Player inventory slots ──
+        if (hs.container == mc.player.getInventory()) {
+            int csi = hs.getContainerSlot();
+            // Armor/offhand disabled in creative
+            if (csi >= 36) { debugLog("creativeSwap blocked equip csi=" + csi); return false; }
+            // Swap with another storage slot
+            if (csi != sel) {
+                ItemStack ti = hs.getItem().copy();
+                ItemStack hi = mc.player.getInventory().getItem(sel).copy();
                 mc.player.getInventory().setItem(sel, ti);
                 mc.gameMode.handleCreativeModeItemAdd(ti, heldMenuSlot);
-                int invIdx = t >= menuHotbarStart ? t - menuHotbarStart : t;
-                mc.player.getInventory().setItem(invIdx, hi);
-                mc.gameMode.handleCreativeModeItemAdd(hi, menuHotbarStart + invIdx);
+                mc.player.getInventory().setItem(csi, hi);
+                mc.gameMode.handleCreativeModeItemAdd(hi, menuHotbarStart + csi);
                 return true;
             }
+            debugLog("creativeSwap same slot csi=" + csi + " sel=" + sel);
             return false;
         }
 
-        int c2 = hs.getContainerSlot();
-        if (c2 >= 0 && c2 < hotbarSize && c2 != sel) {
-            ItemStack hi = mc.player.getInventory().getItem(sel).copy();
-            ItemStack oi = mc.player.getInventory().getItem(c2).copy();
-            mc.player.getInventory().setItem(sel, oi);
-            mc.gameMode.handleCreativeModeItemAdd(oi, heldMenuSlot);
-            mc.player.getInventory().setItem(c2, hi);
-            mc.gameMode.handleCreativeModeItemAdd(hi, menuHotbarStart + c2);
-            return true;
+        // ── Everything else (CONTAINER tabs, unknown) → creative placement ──
+        ItemStack held = mc.player.getInventory().getItem(sel).copy();
+        ItemStack item = hs.getItem().copyWithCount(1);
+        if (!held.isEmpty()) {
+            int f = freeSlot(mc);
+            if (f >= 0 && f < mc.player.getInventory().getContainerSize()) {
+                mc.player.getInventory().setItem(f, held.copy());
+                mc.gameMode.handleCreativeModeItemAdd(held.copy(), menuHotbarStart + f);
+            }
         }
-        return false;
+        mc.player.getInventory().setItem(sel, item);
+        mc.gameMode.handleCreativeModeItemAdd(item, heldMenuSlot);
+        return true;
+    }
+
+    /** Equipment = armor + offhand.  SlotWrapper (creative screen) is never equipment. */
+    private static boolean isEquipSlot(Slot hs) {
+        if (hs instanceof CreativeModeInventoryScreen.SlotWrapper) return false;
+        return isPlayerInventorySlot(hs) && hs.getContainerSlot() >= 36;
     }
 
     private static boolean isPlayerInventorySlot(Slot slot) {
         return slot.container == Minecraft.getInstance().player.getInventory();
     }
 
-    private static int hotbarMenuSlot(int sel) {
-        return 36 + sel; // hotbar at menu slots 36-44 in player inventory screen
+    // ── Close policy ──
+
+    private static boolean isInventoryScreen(Screen screen) {
+        return screen instanceof InventoryScreen || screen instanceof CreativeModeInventoryScreen;
     }
 
     private static int hotbarSize(Minecraft mc) {
