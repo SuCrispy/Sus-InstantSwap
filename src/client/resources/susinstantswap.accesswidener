@@ -1,0 +1,4 @@
+accessWidener v2 named
+# Make these classes accessible for mixin accessors
+accessible class net/minecraft/client/KeyMapping
+accessible class net/minecraft/client/gui/screens/inventory/AbstractContainerScreen

@@ -11,20 +11,20 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Intercepts Screen.keyPressed() for the inventory key on any
- * AbstractContainerScreen.
+ * Intercepts AbstractContainerScreen.keyPressed() for the inventory key.
  *
- * <p>Two scenarios:</p>
- * <ul>
- *   <li><b>REPEAT (inventoryKeyHeld already true):</b> Block close to
- *       prevent flicker during long press. The screen stays open
- *       while the key is held.</li>
- *   <li><b>FRESH press (inventoryKeyHeld false):</b> Try GUI swap
- *       first. If not, let vanilla handle normally (E closes the
- *       screen — standard vanilla behavior).</li>
- * </ul>
+ * <p>In NF, {@code screen.keyPressed()} fires BEFORE {@code KeyMapping.click()},
+ * so {@code inventoryKeyHeld} is still false at Mixin time — fresh presses
+ * fall through to vanilla close.</p>
+ *
+ * <p>In Fabric, {@code KeyboardMixin.handleKeyInput} fires at HEAD before
+ * {@code screen.keyPressed()}, so {@code inventoryKeyHeld} is already true.
+ * However, REPEAT events are blocked by {@code handleKeyInput} (returns true,
+ * cancels the whole {@code KeyboardHandler.keyPress()}), so this Mixin only
+ * sees FRESH presses. That means we can close immediately when no swap
+ * target exists — no deferred-close mechanism needed.</p>
  */
-@Mixin(value = AbstractContainerScreen.class, remap = false)
+@Mixin(AbstractContainerScreen.class)
 public class ScreenKeyMixin {
 
     @Inject(method = "keyPressed(III)Z", at = @At("HEAD"), cancellable = true)
@@ -35,18 +35,17 @@ public class ScreenKeyMixin {
         if (mc == null || mc.options == null) return;
 
         InputConstants.Key pressed = InputConstants.getKey(keyCode, scanCode);
-        if (!pressed.equals(InputConstants.getKey(mc.options.keyInventory.saveString()))) return;
+        if (!pressed.equals(((KeyMappingAccessor) (Object) mc.options.keyInventory).getKey())) return;
 
-        if (SwapKeyState.inventoryKeyHeld) {
-            // REPEAT — block close to prevent flicker during long press
-            cir.setReturnValue(false);
+        // Try GUI swap first (NF's InputEvent.Key fires before Screen.keyPressed)
+        if (InstantSwapClient.tryPerformGuiSwap((AbstractContainerScreen<?>) (Object) this)) {
+            cir.setReturnValue(true);
             return;
         }
 
-        // Fresh press — try GUI swap, otherwise let vanilla handle
-        if (InstantSwapClient.tryPerformGuiSwap((AbstractContainerScreen<?>) (Object) this)) {
-            cir.setReturnValue(true);
-        }
-        // If GUI swap didn't fire: don't intercept — let vanilla close the screen
+        // This is a fresh E press (repeats are blocked by KeyboardMixin).
+        // No valid swap target — close immediately (zero delay).
+        mc.setScreen(null);
+        cir.setReturnValue(true);
     }
 }
