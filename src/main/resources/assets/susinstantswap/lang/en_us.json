@@ -2,7 +2,7 @@
   "description.susinstantswap": "Hold the inventory key to swap items with your hotbar. Coexists with vanilla \u2014 short press toggles inventory, long press swaps.",
   "key.susinstantswap.swap_in_gui": "Swap in GUI",
   "key.categories.susinstantswap": "Su's Instant Swap",
-  "config.susinstantswap.title": "Su's Instant Swap \u2014 Config",
+  "config.susinstantswap.title": "Su's Instant Swap Config",
   "config.susinstantswap.modEnabled": "Enable Mod",
   "config.susinstantswap.modEnabled.tooltip": "Master switch \u2014 when off, the mod is completely disabled and E key behaves like vanilla.",
   "config.susinstantswap.holdThresholdMs": "Long Press Threshold (ms)",

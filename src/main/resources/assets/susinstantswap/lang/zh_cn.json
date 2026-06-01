@@ -7,7 +7,7 @@
   "config.susinstantswap.modEnabled.tooltip": "总开关 — 关闭后模组完全停用，E键恢复原版行为。",
   "config.susinstantswap.holdThresholdMs": "长按判定阈值（毫秒）",
   "config.susinstantswap.holdThresholdMs.tooltip": "按下超过此时长视为长按。范围：50-1000ms，默认200ms。",
-  "config.susinstantswap.holdThresholdMs.value": "长按判定阈值: %s ms",
+  "config.susinstantswap.holdThresholdMs.value": "长按判定阈值：%s 毫秒",
   "config.susinstantswap.soundEnabled": "交换音效",
   "config.susinstantswap.soundEnabled.tooltip": "交换物品时播放音效。",
   "config.susinstantswap.mouseReposition": "鼠标重定位",
