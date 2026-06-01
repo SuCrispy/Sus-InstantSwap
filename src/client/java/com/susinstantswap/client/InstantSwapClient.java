@@ -161,6 +161,7 @@ public class InstantSwapClient {
             if (SwapKeyState.inventoryKeyHeld && !SwapKeyState.longPressConfirmed) {
                 if (mc.screen instanceof AbstractContainerScreen) {
                     SwapKeyState.pressStartNanos = System.nanoTime();
+                    positionCursorIfEnabled(mc, mc.screen);
                     state = SwapState.WATCHING;
                     debugLog("WATCHING");
                 }
@@ -573,6 +574,11 @@ public class InstantSwapClient {
     }
 
     // ── Mouse reposition ──
+
+    private static void positionCursorIfEnabled(Minecraft mc, Screen screen) {
+        if (!config.mouseReposition || !(screen instanceof AbstractContainerScreen<?> s)) return;
+        positionCursorToUIBottomRight(s);
+    }
 
     private static void positionCursorToUIBottomRight(AbstractContainerScreen<?> s) {
         Minecraft mc = Minecraft.getInstance();

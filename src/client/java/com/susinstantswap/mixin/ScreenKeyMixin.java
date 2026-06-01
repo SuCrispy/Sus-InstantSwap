@@ -44,12 +44,8 @@ public class ScreenKeyMixin {
         }
 
         // This is a fresh E press (repeats are blocked by KeyboardMixin).
-        // No valid swap target — close with packet so the server knows.
-        if (mc.player != null) {
-            mc.player.closeContainer();
-        } else {
-            mc.setScreen(null);
-        }
+        // No valid swap target — close immediately (zero delay).
+        mc.setScreen(null);
         cir.setReturnValue(true);
     }
 }
