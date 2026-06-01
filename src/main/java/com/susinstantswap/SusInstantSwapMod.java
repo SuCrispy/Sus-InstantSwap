@@ -14,7 +14,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
 /**
- * Su's Instant Swap v2.0 — Forge 1.21.1 main class.
+ * Su's Instant Swap v2.0 — Forge 1.20.1 main class.
  * Client-side only mod.
  */
 @Mod("susinstantswap")
@@ -27,32 +27,30 @@ public class SusInstantSwapMod {
     public static ForgeConfigSpec CONFIG_SPEC;
 
     public SusInstantSwapMod(FMLJavaModLoadingContext context) {
-        LOGGER.info("[SusInstantSwap] v2.0 Forge 1.21.1 — loading");
+        LOGGER.info("[SusInstantSwap] v2.0 Forge 1.20.1");
 
-        // Build config
+        // 1. Build config spec
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
         CONFIG = new SwapConfig(builder);
         CONFIG_SPEC = builder.build();
 
-        // Register config (Forge loads file → updates spec)
+        // 2. Register config (Forge loads file → updates spec)
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, CONFIG_SPEC);
 
-        // Sync spec → runtime (after registerConfig, so file values are loaded)
+        // 3. Sync spec → runtime (after registerConfig, so file values are loaded)
         CONFIG.syncToRuntime();
 
-        // Register config screen
+        // 4. Register config screen
         ModLoadingContext.get().registerExtensionPoint(
                 ConfigScreenHandler.ConfigScreenFactory.class,
                 () -> new ConfigScreenHandler.ConfigScreenFactory(ForgeConfigScreen::new)
         );
 
-        // MOD event bus: register key bindings
+        // 5. MOD event bus: register key bindings
         context.getModEventBus().register(this);
 
-        // Init client logic
+        // 6. Init client logic
         InstantSwapClient.init();
-
-        LOGGER.info("[SusInstantSwap] v2.0 Forge 1.21.1 — loaded");
     }
 
     @SubscribeEvent

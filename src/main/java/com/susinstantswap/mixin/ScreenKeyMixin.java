@@ -11,16 +11,13 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Intercepts Screen.keyPressed() for the inventory key on any AbstractContainerScreen.
- *
- * Two scenarios:
- *   REPEAT (inventoryKeyHeld already true): Block close to prevent flicker during long press.
- *   FRESH press (inventoryKeyHeld false): Try GUI swap first. If not, let vanilla handle normally.
+ * NOTE: Uses SRG method name m_7933_ instead of Mojang keyPressed because
+ * Forge 1.20.1 reobfuscates all MC methods to SRG at runtime.
  */
 @Mixin(value = AbstractContainerScreen.class, remap = false)
 public class ScreenKeyMixin {
 
-    @Inject(method = "keyPressed(III)Z", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "m_7933_(III)Z", at = @At("HEAD"), cancellable = true, remap = false)
     private void onKeyPressed(int keyCode, int scanCode, int modifiers,
                               CallbackInfoReturnable<Boolean> cir) {
         if (!SwapKeyState.modEnabled) return;
@@ -28,15 +25,23 @@ public class ScreenKeyMixin {
         if (mc == null || mc.options == null) return;
 
         InputConstants.Key pressed = InputConstants.getKey(keyCode, scanCode);
-        if (!InstantSwapClient.isSwapKey(pressed)) return;
 
-        if (SwapKeyState.inventoryKeyHeld) {
-            cir.setReturnValue(false);
+        // ── GUI swap key (bound) → perform swap directly ──
+        if (InstantSwapClient.tryPerformGuiSwap((AbstractContainerScreen<?>) (Object) this, pressed)) {
+            cir.setReturnValue(true);
+            cir.cancel();
             return;
         }
 
-        if (InstantSwapClient.tryPerformGuiSwap((AbstractContainerScreen<?>) (Object) this)) {
-            cir.setReturnValue(true);
+        // ── Inventory key (E) handling ──
+        if (!pressed.equals(mc.options.keyInventory.getKey())) return;
+
+        if (SwapKeyState.inventoryKeyHeld) {
+            // REPEAT — cancel keyPressed to prevent inventory close during long press
+            cir.setReturnValue(false);
+            cir.cancel();
+            return;
         }
+        // Fresh press — let vanilla handle (E opens/closes inventory)
     }
 }
