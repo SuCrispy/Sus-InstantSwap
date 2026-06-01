@@ -577,6 +577,7 @@ public class InstantSwapClient {
 
     private static void positionCursorIfEnabled(Minecraft mc, Screen screen) {
         if (!config.mouseReposition || !(screen instanceof AbstractContainerScreen<?> s)) return;
+        if (hasEditBoxFocus(screen)) return;
         positionCursorToUIBottomRight(s);
     }
 

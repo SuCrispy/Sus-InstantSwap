@@ -133,7 +133,8 @@ public class SwapConfigScreen extends Screen {
         @Override
         protected void updateMessage() {
             int ms = (int) (MIN + value * (MAX - MIN));
-            setMessage(Component.literal(ms + "ms"));
+            setMessage(Component.translatable("config.susinstantswap.holdThresholdMs")
+                    .append(Component.literal(": " + ms + "ms")));
         }
 
         @Override
