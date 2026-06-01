@@ -57,6 +57,10 @@ jar {
     }
 }
 
+remapJar {
+    archiveVersion = ''
+}
+
 publishing {
     publications {
         create("mavenJava", MavenPublication) { from components.java }
