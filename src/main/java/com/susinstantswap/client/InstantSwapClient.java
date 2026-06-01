@@ -216,6 +216,8 @@ public class InstantSwapClient {
 
         // E key when SWAP_IN_GUI_KEY is unbound: triggers swap
         if (isEKey && SWAP_IN_GUI_KEY.isUnbound()) {
+            // Only on fresh E press, not during long-press hold
+            if (SwapKeyState.inventoryKeyHeld) return false;
             debugLog("GUI swap via E key (unbound fallback)");
             return performSwap(mc);
         }

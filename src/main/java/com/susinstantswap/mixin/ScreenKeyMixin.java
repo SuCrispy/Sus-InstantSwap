@@ -21,10 +21,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *   - FRESH E (inventoryKeyHeld false): Try GUI swap first (unbound key fallback).
  *       If not, let vanilla handle normally.
  */
-@Mixin(value = AbstractContainerScreen.class, remap = false)
+@Mixin(value = AbstractContainerScreen.class)
 public class ScreenKeyMixin {
 
-    @Inject(method = "keyPressed(III)Z", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "keyPressed(III)Z", at = @At("HEAD"), cancellable = true, remap = false)
     private void onKeyPressed(int keyCode, int scanCode, int modifiers,
                               CallbackInfoReturnable<Boolean> cir) {
         if (!SwapKeyState.modEnabled) return;
