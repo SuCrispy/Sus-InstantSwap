@@ -4,74 +4,51 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 import net.fabricmc.loader.api.FabricLoader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
-/**
- * Sus-InstantSwap configuration for Fabric — Gson JSON based.
- * Config file: config/susinstantswap.json
- * Changes take effect immediately — no restart needed.
- */
 public class SwapConfig {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SwapConfig.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().excludeFieldsWithoutExposeAnnotation().create();
+    private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("susinstantswap.json");
 
-    @Expose public boolean longPressMode = true;
+    @Expose public boolean modEnabled = true;
     @Expose public int holdThresholdMs = 200;
     @Expose public boolean soundEnabled = true;
-    @Expose public boolean debug = false;
     @Expose public boolean mouseReposition = true;
     @Expose public boolean guiSwapEnabled = false;
     @Expose public boolean emptySlotSwapEnabled = false;
+    @Expose public boolean debug = false;
 
-    private static SwapConfig INSTANCE;
-    private static Path configPath;
-
-    public static SwapConfig get() {
-        if (INSTANCE == null) {
-            INSTANCE = new SwapConfig();
-            configPath = FabricLoader.getInstance().getConfigDir().resolve("susinstantswap.json");
-            load();
+    public static SwapConfig load() {
+        if (Files.exists(CONFIG_PATH)) {
+            try (Reader r = Files.newBufferedReader(CONFIG_PATH, StandardCharsets.UTF_8)) {
+                SwapConfig cfg = GSON.fromJson(r, SwapConfig.class);
+                if (cfg != null) {
+                    cfg.clamp();
+                    return cfg;
+                }
+            } catch (Exception ignored) {}
         }
-        return INSTANCE;
+        SwapConfig def = new SwapConfig();
+        def.save();
+        return def;
     }
 
-    public static void load() {
-        File file = configPath.toFile();
-        if (file.exists()) {
-            try (Reader reader = new FileReader(file)) {
-                SwapConfig loaded = GSON.fromJson(reader, SwapConfig.class);
-                // Merge loaded values
-                INSTANCE.longPressMode = loaded.longPressMode;
-                INSTANCE.holdThresholdMs = loaded.holdThresholdMs;
-                INSTANCE.soundEnabled = loaded.soundEnabled;
-                INSTANCE.debug = loaded.debug;
-                INSTANCE.mouseReposition = loaded.mouseReposition;
-                INSTANCE.guiSwapEnabled = loaded.guiSwapEnabled;
-                INSTANCE.emptySlotSwapEnabled = loaded.emptySlotSwapEnabled;
-                LOGGER.info("[SusInstantSwap] 配置已加载: longPressMode={}, holdThresholdMs={}, soundEnabled={}, debug={}, mouseReposition={}, guiSwapEnabled={}, emptySlotSwapEnabled={}",
-                        INSTANCE.longPressMode, INSTANCE.holdThresholdMs, INSTANCE.soundEnabled, INSTANCE.debug, INSTANCE.mouseReposition, INSTANCE.guiSwapEnabled, INSTANCE.emptySlotSwapEnabled);
-            } catch (Exception e) {
-                LOGGER.warn("[SusInstantSwap] 配置加载失败，使用默认值: {}", e.getMessage());
-            }
-        } else {
-            save();
-            LOGGER.info("[SusInstantSwap] 已创建默认配置文件");
-        }
-    }
-
-    public static void save() {
+    public void save() {
+        clamp();
         try {
-            configPath.getParent().toFile().mkdirs();
-            try (Writer writer = new FileWriter(configPath.toFile())) {
-                GSON.toJson(INSTANCE, writer);
+            Files.createDirectories(CONFIG_PATH.getParent());
+            try (Writer w = Files.newBufferedWriter(CONFIG_PATH, StandardCharsets.UTF_8)) {
+                GSON.toJson(this, w);
             }
-        } catch (Exception e) {
-            LOGGER.warn("[SusInstantSwap] 配置保存失败: {}", e.getMessage());
-        }
+        } catch (Exception ignored) {}
+    }
+
+    private void clamp() {
+        if (holdThresholdMs < 50) holdThresholdMs = 50;
+        if (holdThresholdMs > 1000) holdThresholdMs = 1000;
     }
 }

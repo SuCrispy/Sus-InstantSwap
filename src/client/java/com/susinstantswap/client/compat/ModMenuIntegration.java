@@ -1,16 +1,15 @@
-package com.susinstantswap.config;
+package com.susinstantswap.client.compat;
 
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
 
 /**
- * ModMenu 集成入口。
- * 仅需安装 ModMenu 即可在模组列表出现配置按钮，无需 Cloth Config。
+ * ModMenu integration for SusInstantSwap Fabric 26.1.
+ * ModMenu 18.0.0-beta.1 supports MC 26.1.
  */
 public class ModMenuIntegration implements ModMenuApi {
-
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
-        return SimpleConfigScreen::new;
+        return SwapConfigScreen::new;
     }
 }
