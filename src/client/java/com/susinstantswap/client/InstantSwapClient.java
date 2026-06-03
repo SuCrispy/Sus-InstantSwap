@@ -58,27 +58,18 @@ public class InstantSwapClient {
 
     private static boolean configLogged = false;
 
-    // ── Tooltip suppression after cursor reposition ──
-    private static boolean suppressNextTooltip;
-    private static int suppressTooltipFrames;
-    private static Screen lastTooltipSuppressScreen;
+    // ── Tooltip suppression: tick-count window. 3 ticks covers the reposition + 2 renders. ──
+    private static int suppressTooltipTicks;
+
+    /** Called from TooltipSuppressMixin. Returns true during suppression window. */
+    public static boolean isTooltipSuppressed() {
+        return suppressTooltipTicks > 0;
+    }
 
     // ── Right-click container tracking ──
     private static boolean screenOpenedByInteract;
     // Track E-key opens (vs tab switches in creative) for AFTER_INIT reposition
     private static boolean screenOpenedByKey;
-
-    public static boolean shouldSuppressTooltip() {
-        if (!suppressNextTooltip) return false;
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.screen != lastTooltipSuppressScreen) {
-            suppressNextTooltip = false;
-            suppressTooltipFrames = 0;
-            return false;
-        }
-        suppressNextTooltip = false;
-        return true;
-    }
 
     // ── Reflection cache for CreativeModeInventoryScreen internals ──
     private static Object CREATIVE_CONTAINER;
@@ -136,8 +127,7 @@ public class InstantSwapClient {
     // ── Per-tick ──
 
     private static void onClientTick(Minecraft mc) {
-        if (suppressTooltipFrames > 0 && --suppressTooltipFrames == 0)
-            suppressNextTooltip = false;
+        if (suppressTooltipTicks > 0) suppressTooltipTicks--;
 
         if (!configLogged) {
             configLogged = true;
@@ -619,9 +609,7 @@ public class InstantSwapClient {
                     (int) ((acc.getLeftPos() + acc.getImageWidth()) * gs) - 5,
                     (int) ((acc.getTopPos() + acc.getImageHeight()) * gs) - 5);
         }
-        suppressNextTooltip = true;
-        suppressTooltipFrames = 2;
-        lastTooltipSuppressScreen = s;
+        suppressTooltipTicks = 3;
     }
 
     private static void playSwapSound(Minecraft mc) {
