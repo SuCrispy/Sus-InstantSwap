@@ -13,16 +13,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * Intercepts AbstractContainerScreen.keyPressed() for the inventory key.
  *
- * <p>In NF, {@code screen.keyPressed()} fires BEFORE {@code KeyMapping.click()},
- * so {@code inventoryKeyHeld} is still false at Mixin time — fresh presses
- * fall through to vanilla close.</p>
+ * <p>When a container screen is already open and the user presses E,
+ * {@code handleKeyInput} does NOT set {@code inventoryKeyHeld} (since it
+ * detects the open screen and delegates to this Mixin). This Mixin then:</p>
+ * <ol>
+ *   <li>Tries GUI swap (unbound E key fallback) — if a valid target exists,
+ *       performs the swap and consumes the event.</li>
+ *   <li>If no valid swap target, closes the screen via
+ *       {@code mc.player.closeContainer()} which sends the proper
+ *       {@code ServerboundContainerClosePacket} to the server.</li>
+ * </ol>
  *
- * <p>In Fabric, {@code KeyboardMixin.handleKeyInput} fires at HEAD before
- * {@code screen.keyPressed()}, so {@code inventoryKeyHeld} is already true.
- * However, REPEAT events are blocked by {@code handleKeyInput} (returns true,
- * cancels the whole {@code KeyboardHandler.keyPress()}), so this Mixin only
- * sees FRESH presses. That means we can close immediately when no swap
- * target exists — no deferred-close mechanism needed.</p>
+ * <p>REPEAT events are blocked upstream by {@code handleKeyInput} and
+ * never reach this Mixin.</p>
  */
 @Mixin(AbstractContainerScreen.class)
 public class ScreenKeyMixin {
@@ -32,20 +35,19 @@ public class ScreenKeyMixin {
                               CallbackInfoReturnable<Boolean> cir) {
         if (!SwapKeyState.modEnabled) return;
         Minecraft mc = Minecraft.getInstance();
-        if (mc == null || mc.options == null) return;
+        if (mc == null || mc.options == null || mc.player == null) return;
 
         InputConstants.Key pressed = InputConstants.getKey(keyCode, scanCode);
         if (!pressed.equals(((KeyMappingAccessor) (Object) mc.options.keyInventory).getKey())) return;
 
-        // Try GUI swap first (NF's InputEvent.Key fires before Screen.keyPressed)
+        // 1. Try GUI swap first (unbound E key fallback)
         if (InstantSwapClient.tryPerformGuiSwap((AbstractContainerScreen<?>) (Object) this)) {
             cir.setReturnValue(true);
             return;
         }
 
-        // This is a fresh E press (repeats are blocked by KeyboardMixin).
-        // No valid swap target — close immediately (zero delay).
-        mc.setScreen(null);
+        // 2. No valid swap target — close with proper container close packet
+        mc.player.closeContainer();
         cir.setReturnValue(true);
     }
 }

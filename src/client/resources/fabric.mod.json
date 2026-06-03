@@ -5,7 +5,7 @@
     "name": "Su's Instant Swap",
     "description": "Hold the inventory key to swap items with your hotbar. Coexists with vanilla \u2014 short press toggles inventory, long press swaps.",
     "authors": ["Su_Crispy"],
-    "contact": {},
+    "contact": { "sources": "https://github.com/SuCrispy/Sus-InstantSwap" },
     "license": "LGPL-3.0",
     "icon": "assets/susinstantswap/icon.png",
     "environment": "client",
@@ -20,8 +20,8 @@
         }
     ],
     "depends": {
-        "fabricloader": ">=0.16.0",
-        "minecraft": [">=1.21", "<1.21.2"],
+        "fabricloader": ">=0.19.2",
+        "minecraft": ">=1.21 <1.21.2",
         "java": ">=21",
         "fabric-api": "*"
     },

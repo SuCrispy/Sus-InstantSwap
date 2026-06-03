@@ -51,30 +51,20 @@ public class InstantSwapClient {
 
     private static boolean configLogged = false;
 
-    // ── Tooltip suppression after cursor reposition ──
-    private static boolean suppressNextTooltip;
-    private static int suppressTooltipFrames;
-    private static Screen lastTooltipSuppressScreen;
+    // ── Tooltip suppression: tick-count window. 3 ticks covers the reposition + 2 renders. ──
+    private static int suppressTooltipTicks;
+
+    /** Called from TooltipSuppressMixin. Returns true during suppression window. */
+    public static boolean isTooltipSuppressed() {
+        return suppressTooltipTicks > 0;
+    }
 
     // ── Right-click container tracking ──
     // Only reposition cursor when container was opened via right-click
     // (not via keybind — Curios, cosmetic armor, etc.).
     private static boolean screenOpenedByInteract;
-
-    /** Called by TooltipMixin to check whether the current tooltip should be hidden. */
-    public static boolean shouldSuppressTooltip() {
-        if (!suppressNextTooltip) return false;
-        // Only suppress on the same screen the reposition happened on;
-        // if the screen changed (e.g. inventory closed), let tooltips through.
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.screen != lastTooltipSuppressScreen) {
-            suppressNextTooltip = false;
-            suppressTooltipFrames = 0;
-            return false;
-        }
-        suppressNextTooltip = false;
-        return true;
-    }
+    // Track E-key opens (vs tab switches in creative) for AFTER_INIT reposition
+    private static boolean screenOpenedByKey;
 
     // ── Reflection cache for CreativeModeInventoryScreen internals ──
     private static Object CREATIVE_CONTAINER;
@@ -112,9 +102,18 @@ public class InstantSwapClient {
     private static void onScreenInitPost(Minecraft mc, Screen screen, int scaledWidth, int scaledHeight) {
         if (!config.mouseReposition) return;
         if (!(screen instanceof AbstractContainerScreen<?> s)) return;
-        if (s instanceof InventoryScreen || s instanceof CreativeModeInventoryScreen) return;
-        // Only reposition when the container was opened via right-click
-        // (not via keybind — Curios, cosmetic armor, etc.)
+
+        // Creative inventory: reposition here (AFTER_INIT, layout guaranteed ready)
+        if (s instanceof CreativeModeInventoryScreen) {
+            if (screenOpenedByKey) {
+                screenOpenedByKey = false;
+                positionCursorToUIBottomRight(s);
+            }
+            return;
+        }
+
+        // Other containers: only reposition if opened by right-click
+        if (s instanceof InventoryScreen) return;
         if (!screenOpenedByInteract) return;
         screenOpenedByInteract = false;
         positionCursorToUIBottomRight(s);
@@ -123,8 +122,7 @@ public class InstantSwapClient {
     // ── Per-tick ──
 
     private static void onClientTick(Minecraft mc) {
-        if (suppressTooltipFrames > 0 && --suppressTooltipFrames == 0)
-            suppressNextTooltip = false;
+        if (suppressTooltipTicks > 0) suppressTooltipTicks--;
 
         if (!configLogged) {
             configLogged = true;
@@ -161,9 +159,13 @@ public class InstantSwapClient {
             if (SwapKeyState.inventoryKeyHeld && !SwapKeyState.longPressConfirmed) {
                 if (mc.screen instanceof AbstractContainerScreen) {
                     SwapKeyState.pressStartNanos = System.nanoTime();
-                    positionCursorIfEnabled(mc, mc.screen);
                     state = SwapState.WATCHING;
                     debugLog("WATCHING");
+                    // Creative: repositioned in onScreenInitPost (AFTER_INIT, same tick)
+                    // Survival: reposition here (END_CLIENT_TICK, same tick)
+                    if (!(mc.screen instanceof CreativeModeInventoryScreen)) {
+                        positionCursorIfEnabled(mc, mc.screen);
+                    }
                 }
             }
             return;
@@ -219,9 +221,16 @@ public class InstantSwapClient {
         // fires before mc.screen is set, so we can't gate on screen state.
         if (isInventoryKey) {
             if (keyDown && !SwapKeyState.inventoryKeyHeld) {
+                // If a container screen is already open, this is a GUI swap attempt
+                // (not a long-press start). Don't set inventoryKeyHeld — let
+                // ScreenKeyMixin handle it via tryPerformGuiSwap without interference.
+                if (mc.screen instanceof AbstractContainerScreen) {
+                    return false;
+                }
                 SwapKeyState.inventoryKeyHeld = true;
                 SwapKeyState.pressStartNanos = System.nanoTime();
                 SwapKeyState.longPressConfirmed = false;
+                screenOpenedByKey = true; // track for AFTER_INIT reposition
             } else if (keyDown && SwapKeyState.inventoryKeyHeld) {
                 // Repeat while held: block it
                 return true;
@@ -589,9 +598,7 @@ public class InstantSwapClient {
         GLFW.glfwSetCursorPos(h,
                 (int) ((acc.getLeftPos() + acc.getImageWidth()) * gs) - 5,
                 (int) ((acc.getTopPos() + acc.getImageHeight()) * gs) - 5);
-        suppressNextTooltip = true;
-        suppressTooltipFrames = 2;
-        lastTooltipSuppressScreen = s;
+        suppressTooltipTicks = 3;
     }
 
     private static void playSwapSound(Minecraft mc) {
