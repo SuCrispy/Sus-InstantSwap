@@ -3,6 +3,6 @@
     "package": "com.susinstantswap.mixin",
     "compatibilityLevel": "JAVA_21",
     "mixins": [],
-    "client": ["TooltipSuppressMixin", "KeyClickMixin", "ScreenKeyMixin"],
+    "client": ["KeyClickMixin", "ScreenKeyMixin"],
     "injectors": { "defaultRequire": 1 }
 }

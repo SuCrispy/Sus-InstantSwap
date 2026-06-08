@@ -6,6 +6,7 @@ import com.susinstantswap.config.SwapConfig;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.MouseHandler;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -21,7 +22,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.client.event.RenderTooltipEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
@@ -32,8 +32,8 @@ import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 
 /**
- * Sus-InstantSwap v2.0 — coexists with the vanilla inventory key.
- * Forge 1.21.1 — uses reflection for CreativeModeInventoryScreen internals (FG6 AT).
+ * Sus-InstantSwap v2.0.1 — coexists with the vanilla inventory key.
+ * Forge 1.21.1 — reflection-based mouse reposition (xpos/ypos + SRG fallback).
  */
 public class InstantSwapClient {
 
@@ -44,11 +44,8 @@ public class InstantSwapClient {
     private static SwapState state = SwapState.IDLE;
 
     private static boolean configLogged = false;
-    private static int suppressTooltipTicks;
 
-    public static boolean isTooltipSuppressed() { return suppressTooltipTicks > 0; }
-
-    // Belt-and-suspenders: sync config once on first tick
+    // Sync config once on first tick
     private static boolean firstTickSyncDone = false;
 
     public static void init() {
@@ -95,7 +92,6 @@ public class InstantSwapClient {
         if (event.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getInstance();
 
-        if (suppressTooltipTicks > 0) suppressTooltipTicks--;
 
 
         // Belt-and-suspenders: sync config on first tick
@@ -226,13 +222,6 @@ public class InstantSwapClient {
         return false;
     }
 
-    @SubscribeEvent
-    public static void onRenderTooltip(RenderTooltipEvent.Pre event) {
-        if (isTooltipSuppressed()) {
-            event.setCanceled(true);
-        }
-    }
-
     // ── Unified swap (GUI + long press) ──
 
     private static boolean performSwap(Minecraft mc) {
@@ -241,6 +230,9 @@ public class InstantSwapClient {
         if (hs == null || (!hs.hasItem() && !SwapConfig.emptySlotSwapEnabledRuntime)) return false;
 
         int sel = mc.player.getInventory().selected;
+
+        // Never swap a hotbar slot with itself (any container type)
+        if (isPlayerInventorySlot(hs) && hs.getContainerSlot() == sel) return false;
 
         // Both slots empty → nothing to swap (unified before creative/survival split)
         if (!hs.hasItem() && mc.player.getInventory().getItem(sel).isEmpty()) return false;
@@ -252,8 +244,7 @@ public class InstantSwapClient {
         }
 
         // Player inventory → restrict to backpack + hotbar
-        if (screen instanceof InventoryScreen && (!isPlayerInventorySlot(hs) || hs.index == hotbarMenuSlot(sel)))
-            return false;
+        if (screen instanceof InventoryScreen && !isPlayerInventorySlot(hs)) return false;
 
         // Slot validation: hand item must fit the target slot (e.g., Curios ring slot rejects non-ring items)
         ItemStack hand = mc.player.getInventory().getItem(sel);
@@ -274,6 +265,10 @@ public class InstantSwapClient {
         Minecraft mc = Minecraft.getInstance();
         if (mc.getConnection() == null) return false;
         Int2ObjectOpenHashMap<ItemStack> cs = new Int2ObjectOpenHashMap<>();
+        // Guard: never swap a hotbar slot with itself
+        Slot slot = s.getMenu().getSlot(slotIdx);
+        if (slot != null && slot.container == mc.player.getInventory()
+                && slot.getContainerSlot() == hotbar) return false;
         mc.getConnection().send(new ServerboundContainerClickPacket(
                 s.getMenu().containerId, s.getMenu().getStateId(), slotIdx, hotbar,
                 ClickType.SWAP, ItemStack.EMPTY, cs));
@@ -481,10 +476,32 @@ public class InstantSwapClient {
         Minecraft mc = Minecraft.getInstance();
         long h = mc.getWindow().getWindow();
         double gs = mc.getWindow().getGuiScale();
-        GLFW.glfwSetCursorPos(h,
-                (int) ((s.getGuiLeft() + s.getXSize()) * gs) - 5,
-                (int) ((s.getGuiTop() + s.getYSize()) * gs) - 5);
-        suppressTooltipTicks = 3;
+        int targetX = (int) ((s.getGuiLeft() + s.getXSize()) * gs) - 5;
+        int targetY = (int) ((s.getGuiTop() + s.getYSize()) * gs) - 5;
+
+        // Root fix: set MouseHandler's internal xpos/ypos directly via reflection
+        // so the first render frame already reads the correct cursor position.
+        // Try both Mojang names (dev) and SRG names (Forge runtime).
+        MouseHandler mh = mc.mouseHandler;
+        for (String name : new String[]{"xpos", "f_91507_"}) {
+            try {
+                Field f = mh.getClass().getDeclaredField(name);
+                f.setAccessible(true);
+                f.setDouble(mh, targetX);
+                break;
+            } catch (Exception ignored) {}
+        }
+        for (String name : new String[]{"ypos", "f_91508_"}) {
+            try {
+                Field f = mh.getClass().getDeclaredField(name);
+                f.setAccessible(true);
+                f.setDouble(mh, targetY);
+                break;
+            } catch (Exception ignored) {}
+        }
+
+        // Also move the real OS cursor asynchronously.
+        GLFW.glfwSetCursorPos(h, targetX, targetY);
     }
 
     private static void playSwapSound(Minecraft mc) {
