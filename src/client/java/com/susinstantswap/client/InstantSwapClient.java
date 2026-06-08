@@ -12,7 +12,7 @@ import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.MouseHandler;import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
@@ -31,14 +31,12 @@ import java.lang.reflect.Field;
 
 import com.susinstantswap.mixin.AbstractContainerScreenAccessor;
 import com.susinstantswap.mixin.KeyMappingAccessor;
+import com.susinstantswap.mixin.MouseHandlerAccessor;
 
 /**
- * Sus-InstantSwap v2.0 — Fabric edition.
- * Core swap logic ported from NeoForge 1.21.1 baseline.
- *
- * <p>Uses Fabric API callbacks instead of NeoForge event bus,
- * Accessor mixins instead of Access Transformers, and reflection
- * for private CreativeModeInventoryScreen internals.</p>
+ * Sus-InstantSwap v2.0.1 — Fabric edition.
+ * Uses Fabric API callbacks, Accessor mixins, and reflection-based
+ * mouse reposition (setting MouseHandler xpos/ypos directly).
  */
 public class InstantSwapClient {
 
@@ -50,14 +48,6 @@ public class InstantSwapClient {
     private static SwapState state = SwapState.IDLE;
 
     private static boolean configLogged = false;
-
-    // ── Tooltip suppression: tick-count window. 3 ticks covers the reposition + 2 renders. ──
-    private static int suppressTooltipTicks;
-
-    /** Called from TooltipSuppressMixin. Returns true during suppression window. */
-    public static boolean isTooltipSuppressed() {
-        return suppressTooltipTicks > 0;
-    }
 
     // ── Right-click container tracking ──
     // Only reposition cursor when container was opened via right-click
@@ -103,16 +93,15 @@ public class InstantSwapClient {
         if (!config.mouseReposition) return;
         if (!(screen instanceof AbstractContainerScreen<?> s)) return;
 
-        // Creative inventory: reposition here (AFTER_INIT, layout guaranteed ready)
-        if (s instanceof CreativeModeInventoryScreen) {
-            if (screenOpenedByKey) {
-                screenOpenedByKey = false;
-                positionCursorToUIBottomRight(s);
-            }
+        // E-key open: reposition here (AFTER_INIT fires before the first render,
+        // so the first frame already sees the correct cursor position).
+        if (screenOpenedByKey) {
+            screenOpenedByKey = false;
+            positionCursorToUIBottomRight(s);
             return;
         }
 
-        // Other containers: only reposition if opened by right-click
+        // Right-click containers: skip vanilla inventory screens
         if (s instanceof InventoryScreen) return;
         if (!screenOpenedByInteract) return;
         screenOpenedByInteract = false;
@@ -122,8 +111,6 @@ public class InstantSwapClient {
     // ── Per-tick ──
 
     private static void onClientTick(Minecraft mc) {
-        if (suppressTooltipTicks > 0) suppressTooltipTicks--;
-
         if (!configLogged) {
             configLogged = true;
             LOGGER.info("[SusInstantSwap] Config: mod={} threshold={}ms sound={} guiSwap={} emptySwap={} debug={} mouse={}",
@@ -161,11 +148,7 @@ public class InstantSwapClient {
                     SwapKeyState.pressStartNanos = System.nanoTime();
                     state = SwapState.WATCHING;
                     debugLog("WATCHING");
-                    // Creative: repositioned in onScreenInitPost (AFTER_INIT, same tick)
-                    // Survival: reposition here (END_CLIENT_TICK, same tick)
-                    if (!(mc.screen instanceof CreativeModeInventoryScreen)) {
-                        positionCursorIfEnabled(mc, mc.screen);
-                    }
+                    // Repositioned in onScreenInitPost (AFTER_INIT, before first render)
                 }
             }
             return;
@@ -293,6 +276,9 @@ public class InstantSwapClient {
 
         int sel = mc.player.getInventory().selected;
 
+        // Never swap a hotbar slot with itself (any container type)
+        if (isPlayerInventorySlot(hs) && hs.getContainerSlot() == sel) return false;
+
         // Both slots empty → nothing to swap
         if (!hs.hasItem() && mc.player.getInventory().getItem(sel).isEmpty()) return false;
 
@@ -303,8 +289,7 @@ public class InstantSwapClient {
         }
 
         // Player inventory → restrict to backpack + hotbar
-        if (screen instanceof InventoryScreen && (!isPlayerInventorySlot(hs) || hs.index == hotbarMenuSlot(sel)))
-            return false;
+        if (screen instanceof InventoryScreen && !isPlayerInventorySlot(hs)) return false;
 
         // Slot validation: hand item must fit the target slot
         ItemStack hand = mc.player.getInventory().getItem(sel);
@@ -325,6 +310,10 @@ public class InstantSwapClient {
         Minecraft mc = Minecraft.getInstance();
         if (mc.getConnection() == null) return false;
         Int2ObjectOpenHashMap<ItemStack> cs = new Int2ObjectOpenHashMap<>();
+        // Guard: never swap a hotbar slot with itself
+        Slot slot = s.getMenu().getSlot(slotIdx);
+        if (slot != null && slot.container == mc.player.getInventory()
+                && slot.getContainerSlot() == hotbar) return false;
         mc.getConnection().send(new ServerboundContainerClickPacket(
                 s.getMenu().containerId, s.getMenu().getStateId(), slotIdx, hotbar,
                 ClickType.SWAP, ItemStack.EMPTY, cs));
@@ -595,10 +584,17 @@ public class InstantSwapClient {
         long h = mc.getWindow().getWindow();
         double gs = mc.getWindow().getGuiScale();
         AbstractContainerScreenAccessor acc = (AbstractContainerScreenAccessor) s;
-        GLFW.glfwSetCursorPos(h,
-                (int) ((acc.getLeftPos() + acc.getImageWidth()) * gs) - 5,
-                (int) ((acc.getTopPos() + acc.getImageHeight()) * gs) - 5);
-        suppressTooltipTicks = 3;
+        int targetX = (int) ((acc.getLeftPos() + acc.getImageWidth()) * gs) - 5;
+        int targetY = (int) ((acc.getTopPos() + acc.getImageHeight()) * gs) - 5;
+
+        // Root fix: set MouseHandler's internal xpos/ypos directly via Accessor
+        // so the first render frame already reads the correct cursor position.
+        // Uses Mixin Accessor (Loom auto-remaps field names from Mojang → intermediary).
+        ((MouseHandlerAccessor) (Object) mc.mouseHandler).setXpos(targetX);
+        ((MouseHandlerAccessor) (Object) mc.mouseHandler).setYpos(targetY);
+
+        // Also move the real OS cursor asynchronously.
+        GLFW.glfwSetCursorPos(h, targetX, targetY);
     }
 
     private static void playSwapSound(Minecraft mc) {
