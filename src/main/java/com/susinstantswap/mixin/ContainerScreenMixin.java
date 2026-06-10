@@ -23,6 +23,10 @@ public class ContainerScreenMixin {
                           float partialTick, CallbackInfo ci) {
         if (!SwapKeyState.modEnabled) return;
 
+        // Do not draw row-swap grooves when the screen was opened
+        // by a non-vanilla key (e.g. backpack mod).
+        if (!SwapKeyState.lastTriggerKeyIsVanilla) return;
+
         SwapConfig cfg = SusInstantSwapMod.CONFIG;
         if (cfg == null || !cfg.rowSwapEnabled.get()) {
             RowArrowWidget.visible = false;

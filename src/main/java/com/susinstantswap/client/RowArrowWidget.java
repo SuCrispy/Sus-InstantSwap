@@ -6,15 +6,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.susinstantswap.SwapLog;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.inventory.Slot;
-
-import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
 
 /**
  * Thin green groove indicators on both sides of the player-inventory
@@ -23,7 +21,6 @@ import org.slf4j.Logger;
  */
 public class RowArrowWidget {
 
-    private static final Logger LOGGER = LogUtils.getLogger();
     public static final int ROW_COUNT = 3;
 
     private static final int TRIGGER_OVERLAP = 1;
@@ -89,11 +86,11 @@ public class RowArrowWidget {
             idx++;
         }
         rowsDetected = (idx == ROW_COUNT);
-        if (debugLog()) {
-            LOGGER.info("[RowSwap] detectRows: found={}/{} screen={} left={} top={}",
+        if (SwapLog.shouldDebug()) {
+            SwapLog.debug("detectRows: found={}/{} screen={} left={} top={}",
                     idx, ROW_COUNT, screen.getClass().getSimpleName(), panelLeft, top);
             for (int i = 0; i < idx; i++) {
-                LOGGER.info("[RowSwap]   row[{}]: y={} slotL={} slotR={} slots=[{},{},{},{},{},{},{},{},{}]",
+                SwapLog.debug("  row[{}]: y={} slotL={} slotR={} slots=[{},{},{},{},{},{},{},{},{}]",
                         i, rowY[i], rowSlotLeft[i], rowSlotRight[i],
                         rowSlots[i][0], rowSlots[i][1], rowSlots[i][2],
                         rowSlots[i][3], rowSlots[i][4], rowSlots[i][5],
@@ -105,11 +102,6 @@ public class RowArrowWidget {
     /** Menu slot index for a given row + column. */
     public static int rowSlotIndex(int row, int col) {
         return rowsDetected ? rowSlots[row][col] : 9 + row * 9 + col;
-    }
-
-    private static boolean debugLog() {
-        return com.susinstantswap.SusInstantSwapMod.CONFIG != null
-            && com.susinstantswap.SusInstantSwapMod.CONFIG.debug.get();
     }
 
     private static boolean isHoveringRight(int row, double mx, double my) {
@@ -140,8 +132,8 @@ public class RowArrowWidget {
                 break;
             }
         }
-        if (hoveredRow != prev && debugLog()) {
-            LOGGER.info("[RowSwap] hover: {}→{}", prev, hoveredRow);
+        if (hoveredRow != prev && SwapLog.shouldDebug()) {
+            SwapLog.debug("hover: {}→{}", prev, hoveredRow);
         }
         if (hoveredRow >= 0 && prev != hoveredRow) {
             Minecraft mc = Minecraft.getInstance();

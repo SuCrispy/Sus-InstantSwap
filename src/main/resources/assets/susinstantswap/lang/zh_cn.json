@@ -17,6 +17,15 @@
   "config.susinstantswap.emptySlotSwapEnabled.tooltip": "悬停空槽位时也可执行交换。",
   "config.susinstantswap.rowSwapEnabled": "整行交换",
   "config.susinstantswap.rowSwapEnabled.tooltip": "在背包每行左右两侧显示凹槽。悬停时按住E键，可将整行物品与快捷栏交换。所有含玩家物品栏的界面均生效。",
+  "config.susinstantswap.toastEnabled": "浮窗提示",
+  "config.susinstantswap.toastEnabled.tooltip": "在 action bar 显示警告、错误和信息提示。",
   "config.susinstantswap.debug": "调试日志",
-  "config.susinstantswap.debug.tooltip": "输出调试信息到游戏日志。"
+  "config.susinstantswap.debug.tooltip": "输出调试信息到游戏日志。",
+
+  "toast.susinstantswap.empty_slot_swap_disabled": "空位交换未开启，无法与空格子交换",
+  "toast.susinstantswap.both_slots_empty": "两个槽位都为空，没有可交换的物品",
+  "toast.susinstantswap.not_player_inventory": "只能交换背包或快捷栏内的物品",
+  "toast.susinstantswap.item_not_placeable": "手上的物品无法放入此槽位",
+  "toast.susinstantswap.armor_slot_mismatch": "物品类型与装备槽位不匹配",
+  "toast.susinstantswap.unknown_error": "发生未知错误，交换失败"
 }

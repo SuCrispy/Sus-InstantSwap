@@ -1,7 +1,7 @@
 package com.susinstantswap.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.logging.LogUtils;
+import com.susinstantswap.SwapLog;
 import com.susinstantswap.config.SwapConfig;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.client.KeyMapping;
@@ -31,14 +31,12 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import java.lang.reflect.Field;
 
 import org.lwjgl.glfw.GLFW;
-import org.slf4j.Logger;
 
 /**
- * Sus-InstantSwap v2.1.0 — row-swap arrows on survival inventory.
+ * Sus-InstantSwap v2.1.0 — row-swap grooves on any container with player inventory.
  */
 public class InstantSwapClient {
 
-    private static final Logger LOGGER = LogUtils.getLogger();
     private static KeyMapping SWAP_IN_GUI_KEY;
     private static SwapConfig config;
 
@@ -49,10 +47,12 @@ public class InstantSwapClient {
 
     public static void init(SwapConfig cfg) {
         config = cfg;
+        SwapLog.info("InstantSwapClient initializing...");
         SWAP_IN_GUI_KEY = new KeyMapping("key.susinstantswap.swap_in_gui",
                 InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(),
                 "key.categories.susinstantswap");
         NeoForge.EVENT_BUS.register(InstantSwapClient.class);
+        SwapLog.info("InstantSwapClient initialized, GUI swap key: {}", SWAP_IN_GUI_KEY.getKey().getName());
     }
 
     public static void registerKey(RegisterKeyMappingsEvent event) {
@@ -68,11 +68,13 @@ public class InstantSwapClient {
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         screenOpenedByInteract = true;
+        SwapLog.debug("RightClickBlock detected, screenOpenedByInteract=true");
     }
 
     @SubscribeEvent
     public static void onRightClickEntity(PlayerInteractEvent.EntityInteract event) {
         screenOpenedByInteract = true;
+        SwapLog.debug("RightClickEntity detected, screenOpenedByInteract=true");
     }
 
     @SubscribeEvent
@@ -82,6 +84,7 @@ public class InstantSwapClient {
         if (s instanceof InventoryScreen || s instanceof CreativeModeInventoryScreen) return;
         if (!screenOpenedByInteract) return;
         screenOpenedByInteract = false;
+        SwapLog.debug("Screen init (interact): repositioning cursor for {}", s.getClass().getSimpleName());
         positionCursorToUIBottomRight(s);
     }
 
@@ -93,19 +96,32 @@ public class InstantSwapClient {
 
         if (!configLogged) {
             configLogged = true;
-            LOGGER.info("[SusInstantSwap] Config: mod={} threshold={}ms sound={} guiSwap={} emptySwap={} rowSwap={} debug={} mouse={}",
+            // Scan registered key mappings for target keys (inventory + backpack mods)
+            SwapKeyState.refreshTargetKeys(mc.options.keyInventory.getKey());
+            SwapLog.info("Config loaded: modEnabled={}, holdThreshold={}ms, soundEnabled={}, guiSwapEnabled={}, emptySlotSwapEnabled={}, rowSwapEnabled={}, debug={}, mouseReposition={}",
                     config.modEnabled.get(), config.holdThresholdMs.get(), config.soundEnabled.get(),
                     config.guiSwapEnabled.get(), config.emptySlotSwapEnabled.get(),
                     config.rowSwapEnabled.get(),
                     config.debug.get(), config.mouseReposition.get());
+            SwapLog.debug("Target keys count: {}", SwapKeyState.getTargetKeys().size());
         }
 
+        // Detect runtime key rebinds and refresh target keys automatically
+        SwapKeyState.checkForKeyRebind(mc.options.keyInventory.getKey());
+
         // Sync master switch to shared state (read by mixins)
-        SwapKeyState.modEnabled = config.modEnabled.get();
+        boolean newModEnabled = config.modEnabled.get();
+        if (SwapKeyState.modEnabled != newModEnabled) {
+            SwapLog.debug("modEnabled changed: {} -> {}", SwapKeyState.modEnabled, newModEnabled);
+        }
+        SwapKeyState.modEnabled = newModEnabled;
         if (!SwapKeyState.modEnabled) return;
 
         if (mc.player == null || mc.gameMode == null) {
-            state = SwapState.IDLE;
+            if (state != SwapState.IDLE) {
+                SwapLog.debug("State reset: player={} gameMode={}", mc.player, mc.gameMode);
+                state = SwapState.IDLE;
+            }
             SwapKeyState.closePendingTicks = 0;
             return;
         }
@@ -115,7 +131,7 @@ public class InstantSwapClient {
             SwapKeyState.closePendingTicks--;
             if (SwapKeyState.closePendingTicks == 0) {
                 if (mc.screen instanceof AbstractContainerScreen) {
-                    debugLog("deferred close");
+                    SwapLog.debug("Deferred close triggered for {}", mc.screen.getClass().getSimpleName());
                     mc.player.closeContainer();
                 }
             }
@@ -129,7 +145,7 @@ public class InstantSwapClient {
                     SwapKeyState.pressStartNanos = System.nanoTime();
                     positionCursorIfEnabled(mc, mc.screen);
                     state = SwapState.WATCHING;
-                    debugLog("WATCHING");
+                    SwapLog.debug("State: IDLE -> WATCHING (screen={})", mc.screen.getClass().getSimpleName());
                 }
             }
             return;
@@ -137,27 +153,65 @@ public class InstantSwapClient {
 
         // ── WATCHING: check threshold ──
         if (state == SwapState.WATCHING) {
-            if (mc.screen == null) { state = SwapState.IDLE; return; }
-            if (!isInventoryKeyPhysicallyDown(mc)) { state = SwapState.IDLE; return; }
+            if (mc.screen == null) {
+                SwapLog.debug("State: WATCHING -> IDLE (screen closed)");
+                state = SwapState.IDLE;
+                return;
+            }
+            if (!isInventoryKeyPhysicallyDown(mc)) {
+                SwapLog.debug("State: WATCHING -> IDLE (key released before threshold)");
+                state = SwapState.IDLE;
+                return;
+            }
             if ((System.nanoTime() - SwapKeyState.pressStartNanos)
                     >= config.holdThresholdMs.get() * 1_000_000L) {
                 SwapKeyState.longPressConfirmed = true;
                 state = SwapState.LONG_PRESS;
-                debugLog("LONG_PRESS");
+                SwapLog.debug("State: WATCHING -> LONG_PRESS (threshold {}ms reached)", config.holdThresholdMs.get());
             }
             return;
         }
 
         // ── LONG_PRESS → release triggers swap ──
         if (state == SwapState.LONG_PRESS) {
-            if (mc.screen == null) { state = SwapState.IDLE; return; }
+            if (mc.screen == null) {
+                SwapLog.debug("State: LONG_PRESS -> IDLE (screen closed)");
+                state = SwapState.IDLE;
+                return;
+            }
             if (!isInventoryKeyPhysicallyDown(mc) || !SwapKeyState.inventoryKeyHeld) {
+                SwapLog.debug("Long press released, executing swap...");
                 boolean swapped = performSwap(mc);
+                SwapLog.debug("Swap result: swapped={}", swapped);
                 if (!swapped) {
                     int closeDelay = (mc.screen instanceof AbstractContainerScreen<?> s && isVanillaInventory(s)) ? 1 : 2;
                     SwapKeyState.closePendingTicks = closeDelay; // auto-close
+                    SwapLog.debug("Swap not performed, scheduling close delay={}", closeDelay);
                 }
                 state = SwapState.IDLE;
+            }
+        }
+    }
+
+    // ── Block backpack key repeats at Screen level ──
+    // ScreenEvent.KeyPressed.Pre fires before any Screen.keyPressed(), including
+    // backpack mod screens that override keyPressed() (e.g. SophisticatedBackpacks).
+    // Cancelling this event prevents the backpack from toggling closed when the
+    // user is holding the inventory key for long-press swap.
+
+    @SubscribeEvent
+    public static void onScreenKeyPressedPre(ScreenEvent.KeyPressed.Pre event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.gameMode == null) return;
+        if (!SwapKeyState.inventoryKeyHeld) return;
+        if (!(event.getScreen() instanceof AbstractContainerScreen)) return;
+
+        for (InputConstants.Key target : SwapKeyState.getTargetKeys()) {
+            if (target.getType() == InputConstants.Type.KEYSYM && event.getKeyCode() == target.getValue()) {
+                SwapLog.debug("onScreenKeyPressedPre: cancelling repeat key for held inventory key (screen={}, key={})",
+                        event.getScreen().getClass().getSimpleName(), event.getKeyCode());
+                event.setCanceled(true);
+                return;
             }
         }
     }
@@ -176,8 +230,9 @@ public class InstantSwapClient {
         boolean isInventoryKey = isInventoryKeyEvent(mc, event);
         boolean isGuiSwapKey = SWAP_IN_GUI_KEY.isUnbound() ? false : isGuiSwapKeyEvent(event);
 
-        // EditBox protection: consume click so swap keys don't close screen
+        // EditBox protection: consume vanilla click so E doesn't close screen
         if (keyDown && isInventoryKey && mc.screen != null && hasEditBoxFocus(mc.screen)) {
+            SwapLog.debug("EditBox focused, consuming inventory key to prevent screen close");
             while (mc.options.keyInventory.consumeClick()) {}
             if (mc.screen instanceof AbstractContainerScreen) {
                 if (mc.player.containerMenu.getSlot(0).hasItem()) return;
@@ -188,7 +243,9 @@ public class InstantSwapClient {
         if (keyDown && config.guiSwapEnabled.get()) {
             if ((isGuiSwapKey || (isInventoryKey && SWAP_IN_GUI_KEY.isUnbound()))
                     && mc.screen instanceof AbstractContainerScreen) {
-                performSwap(mc);
+                SwapLog.debug("GUI swap triggered by key");
+                boolean result = performSwap(mc);
+                SwapLog.debug("GUI swap result: {}", result);
             }
         }
     }
@@ -199,13 +256,17 @@ public class InstantSwapClient {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.gameMode == null) return false;
         if (!config.guiSwapEnabled.get() || !SWAP_IN_GUI_KEY.isUnbound()) return false;
+        SwapLog.debug("tryPerformGuiSwap from ScreenKeyMixin");
         return performSwap(mc);
     }
 
     // ── Unified swap (GUI + long press) ──
 
     private static boolean performSwap(Minecraft mc) {
-        if (!(mc.screen instanceof AbstractContainerScreen<?> screen)) return false;
+        if (!(mc.screen instanceof AbstractContainerScreen<?> screen)) {
+            SwapLog.debug("performSwap: not an AbstractContainerScreen, abort");
+            return false;
+        }
 
         // ── Guard: block all swaps when the selected hotbar item is the
         //     container opener (open backpack, bundle, etc.).  Detected by
@@ -213,13 +274,13 @@ public class InstantSwapClient {
         if (isContainerOpener(mc.player.getInventory()
                 .getItem(mc.player.getInventory().selected),
                 mc.player.containerMenu)) {
-            debugLog("performSwap BLOCKED by container opener guard");
+            SwapLog.debug("performSwap BLOCKED by container opener guard");
             return false;
         }
 
         // ── Row swap: hovering over a groove on any container with player inventory ──
         if (RowArrowWidget.hoveredRow >= 0 && config.rowSwapEnabled.get()) {
-            debugLog("performSwap TRIGGERED: screen=" + screen.getClass().getSimpleName()
+            SwapLog.debug("performSwap TRIGGERED: screen=" + screen.getClass().getSimpleName()
                     + " hoveredRow=" + RowArrowWidget.hoveredRow
                     + " creative=" + mc.player.isCreative());
             if (performRowSwap(mc, screen)) return true;
@@ -227,7 +288,14 @@ public class InstantSwapClient {
         }
 
         Slot hs = screen.getSlotUnderMouse();
-        if (hs == null || (!hs.hasItem() && !config.emptySlotSwapEnabled.get())) return false;
+        if (hs == null || (!hs.hasItem() && !config.emptySlotSwapEnabled.get())) {
+            SwapLog.debug("performSwap: no valid slot under mouse (hs={}, hasItem={})",
+                    hs, hs != null && hs.hasItem());
+            if (hs != null && !hs.hasItem()) {
+                SwapToast.warn("toast.susinstantswap.empty_slot_swap_disabled");
+            }
+            return false;
+        }
 
         int sel = mc.player.getInventory().selected;
 
@@ -235,24 +303,40 @@ public class InstantSwapClient {
         if (isPlayerInventorySlot(hs) && hs.getContainerSlot() == sel) return false;
 
         // Both slots empty → nothing to swap (unified before creative/survival split)
-        if (!hs.hasItem() && mc.player.getInventory().getItem(sel).isEmpty()) return false;
+        if (!hs.hasItem() && mc.player.getInventory().getItem(sel).isEmpty()) {
+            SwapLog.debug("performSwap: both slots empty, nothing to swap");
+            SwapToast.warn("toast.susinstantswap.both_slots_empty");
+            return false;
+        }
 
-        // ── Creative inventory → special handling ──
+        boolean creative = mc.gameMode.hasInfiniteItems();
+        SwapLog.debug("performSwap: slot={}, hotbarSel={}, creative={}, screen={}",
+                hs.index, sel, creative, screen.getClass().getSimpleName());
+
+        // ── Creative inventory → special handling (must be BEFORE csi filter) ──
         if (screen instanceof CreativeModeInventoryScreen cs) {
             if (creativeSwap(mc, cs, sel)) { playSwapSound(mc); return true; }
             return false;
         }
 
         // Player inventory → restrict to backpack + hotbar
-        if (screen instanceof InventoryScreen && !isPlayerInventorySlot(hs)) return false;
+        if (screen instanceof InventoryScreen && !isPlayerInventorySlot(hs)) {
+            SwapLog.debug("performSwap: inventory screen restriction");
+            SwapToast.error("toast.susinstantswap.not_player_inventory");
+            return false;
+        }
 
         // Slot validation: hand item must fit the target slot (e.g., Curios ring slot rejects non-ring items)
         ItemStack hand = mc.player.getInventory().getItem(sel);
-        if (!hand.isEmpty() && !hs.mayPlace(hand)) return false;
+        if (!hand.isEmpty() && !hs.mayPlace(hand)) {
+            SwapLog.debug("performSwap: hand item {} may not be placed in target slot", hand.getDisplayName().getString());
+            SwapToast.error("toast.susinstantswap.item_not_placeable");
+            return false;
+        }
 
         // Guard: can we pick up the item from the hovered slot? (vanilla checks this for SWAP)
         if (hs.hasItem() && !hs.mayPickup(mc.player)) {
-            debugLog("performSwap BLOCKED: hovered slot mayPickup=false");
+            SwapLog.debug("performSwap BLOCKED: hovered slot mayPickup=false");
             return false;
         }
 
@@ -260,7 +344,7 @@ public class InstantSwapClient {
         // Prevents swapping away items that are "in use" (e.g. an open backpack in mainhand)
         Slot hotbarMenuSlot = findMenuSlot(screen, mc.player.getInventory(), sel);
         if (hotbarMenuSlot != null && hotbarMenuSlot.hasItem() && !hotbarMenuSlot.mayPickup(mc.player)) {
-            debugLog("performSwap BLOCKED: selected hotbar slot mayPickup=false (item in use)");
+            SwapLog.debug("performSwap BLOCKED: selected hotbar slot mayPickup=false (item in use)");
             return false;
         }
 
@@ -270,37 +354,42 @@ public class InstantSwapClient {
         if (containerSwap(screen, hs.index, sel)) {
             playSwapSound(mc);
             SwapKeyState.closePendingTicks = closeDelay;
+            SwapLog.debug("performSwap: SWAP packet sent, closeDelay={}", closeDelay);
             return true;
         }
+        SwapLog.warn("performSwap: containerSwap returned false unexpectedly");
+        SwapToast.error("toast.susinstantswap.unknown_error");
         return false;
     }
 
     private static boolean containerSwap(AbstractContainerScreen<?> s, int slotIdx, int hotbar) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.getConnection() == null) {
-            debugLog("containerSwap: connection=null → false");
+            SwapLog.warn("containerSwap: connection is null, cannot send packet");
             return false;
         }
+        SwapLog.debug("containerSwap: containerId={}, stateId={}, slotIdx={}, hotbar={}",
+                s.getMenu().containerId, s.getMenu().getStateId(), slotIdx, hotbar);
         Int2ObjectOpenHashMap<ItemStack> cs = new Int2ObjectOpenHashMap<>();
         // Guard: never swap a hotbar slot with itself
         Slot slot = s.getMenu().getSlot(slotIdx);
         if (slot != null && slot.container == mc.player.getInventory()
                 && slot.getContainerSlot() == hotbar) {
-            debugLog("containerSwap: self-swap guard → false");
+            SwapLog.debug("containerSwap: self-swap guard → false");
             return false;
         }
         // Guard: target slot must allow pickup (vanilla checks this for SWAP)
         if (slot != null && slot.hasItem() && !slot.mayPickup(mc.player)) {
-            debugLog("containerSwap: target slot mayPickup=false → false");
+            SwapLog.debug("containerSwap: target slot mayPickup=false → false");
             return false;
         }
         // Guard: hotbar slot must allow pickup (prevents swapping "in use" items like open backpacks)
         Slot hSlot = findMenuSlot(s, mc.player.getInventory(), hotbar);
         if (hSlot != null && hSlot.hasItem() && !hSlot.mayPickup(mc.player)) {
-            debugLog("containerSwap: hotbar slot mayPickup=false → false");
+            SwapLog.debug("containerSwap: hotbar slot mayPickup=false → false");
             return false;
         }
-        debugLog("containerSwap SEND: containerId=" + s.getMenu().containerId
+        SwapLog.debug("containerSwap SEND: containerId=" + s.getMenu().containerId
                 + " stateId=" + s.getMenu().getStateId()
                 + " slotIdx=" + slotIdx + " hotbar=" + hotbar);
         mc.getConnection().send(new ServerboundContainerClickPacket(
@@ -313,68 +402,67 @@ public class InstantSwapClient {
     private static boolean performRowSwap(Minecraft mc, AbstractContainerScreen<?> screen) {
         int row = RowArrowWidget.hoveredRow;
 
-        debugLog("performRowSwap ENTER: row=" + row + " creative=" + mc.player.isCreative());
+        SwapLog.debug("performRowSwap ENTER: row={} creative={}", row, mc.player.isCreative());
 
         boolean anySwap = false;
         for (int col = 0; col < 9; col++) {
             int slotIdx = RowArrowWidget.rowSlotIndex(row, col);
             Slot s = screen.getMenu().getSlot(slotIdx);
             if (s == null) {
-                debugLog("  col=" + col + " slotIdx=" + slotIdx + " → NULL, skip");
+                SwapLog.debug("  col={} slotIdx={} → NULL, skip", col, slotIdx);
                 continue;
             }
 
             // Safety: must be a player-inventory slot
             if (s.container != mc.player.getInventory()) {
-                debugLog("  col=" + col + " slotIdx=" + slotIdx
-                        + " → container=" + s.container.getClass().getSimpleName() + " not playerInv, skip");
+                SwapLog.debug("  col={} slotIdx={} → container={} not playerInv, skip",
+                        col, slotIdx, s.container.getClass().getSimpleName());
                 continue;
             }
             if (s.getContainerSlot() == col) {
-                debugLog("  col=" + col + " slotIdx=" + slotIdx + " → self-swap, skip");
+                SwapLog.debug("  col={} slotIdx={} → self-swap, skip", col, slotIdx);
                 continue;
             }
 
             if (!s.hasItem() && mc.player.getInventory().getItem(col).isEmpty()
                     && !config.emptySlotSwapEnabled.get()) {
-                debugLog("  col=" + col + " slotIdx=" + slotIdx + " → both empty + emptySwap=off, skip");
+                SwapLog.debug("  col={} slotIdx={} → both empty + emptySwap=off, skip", col, slotIdx);
                 continue;
             }
 
             // Guard: row slot must allow pickup (locked output slots, etc.)
             if (s.hasItem() && !s.mayPickup(mc.player)) {
-                debugLog("  col=" + col + " → row slot mayPickup=false, skip");
+                SwapLog.debug("  col={} → row slot mayPickup=false, skip", col);
                 continue;
             }
 
             // Guard: hotbar item must fit in the row slot
             ItemStack hotbarItem = mc.player.getInventory().getItem(col);
             if (!hotbarItem.isEmpty() && !s.mayPlace(hotbarItem)) {
-                debugLog("  col=" + col + " → mayPlace rejected hotbar item, skip");
+                SwapLog.debug("  col={} → mayPlace rejected hotbar item, skip", col);
                 continue;
             }
 
             // Guard: hotbar slot must allow pickup (prevents swapping "in use" items)
             Slot hSlot = findMenuSlot(screen, mc.player.getInventory(), col);
             if (hSlot != null && hSlot.hasItem() && !hSlot.mayPickup(mc.player)) {
-                debugLog("  col=" + col + " → hotbar slot mayPickup=false, skip");
+                SwapLog.debug("  col={} → hotbar slot mayPickup=false, skip", col);
                 continue;
             }
 
-            debugLog("  col=" + col + " slotIdx=" + slotIdx + " cs=" + s.getContainerSlot()
-                    + " hasItem=" + s.hasItem()
-                    + " hotbarHasItem=" + !mc.player.getInventory().getItem(col).isEmpty()
-                    + " → containerSwap");
+            SwapLog.debug("  col={} slotIdx={} cs={} hasItem={} hotbarHasItem={} → containerSwap",
+                    col, slotIdx, s.getContainerSlot(), s.hasItem(),
+                    !mc.player.getInventory().getItem(col).isEmpty());
 
             if (containerSwap(screen, slotIdx, col)) {
                 anySwap = true;
-                debugLog("  col=" + col + " → OK");
+                SwapLog.debug("  col={} → OK", col);
             } else {
-                debugLog("  col=" + col + " → FAILED");
+                SwapLog.debug("  col={} → FAILED", col);
             }
         }
 
-        debugLog("performRowSwap EXIT: anySwap=" + anySwap);
+        SwapLog.debug("performRowSwap EXIT: anySwap={}", anySwap);
 
         if (anySwap) {
             playSwapSound(mc);
@@ -392,29 +480,32 @@ public class InstantSwapClient {
         int menuHotbarStart = 36;
         int heldIdx = menuHotbarStart + sel;
         ItemStack handStack = mc.player.getInventory().getItem(sel);
-        debugLog("creativeSwap ENTER: sel=" + sel + " hand=" + (handStack.isEmpty()?"EMPTY":handStack.getDisplayName().getString())
-                + " hs.container=" + (hs.container==CreativeModeInventoryScreen.CONTAINER?"CONTAINER":hs.container==mc.player.getInventory()?"PLAYER_INV":
-                  hs instanceof CreativeModeInventoryScreen.SlotWrapper?"SlotWrapper("+((CreativeModeInventoryScreen.SlotWrapper)hs).target.index+")":"OTHER")
-                + " hs.index=" + hs.index + " csi=" + hs.getContainerSlot());
+        SwapLog.debug("creativeSwap ENTER: sel={} hand={} hs.container={} hs.index={} csi={}",
+                sel, handStack.isEmpty() ? "EMPTY" : handStack.getDisplayName().getString(),
+                hs.container == CreativeModeInventoryScreen.CONTAINER ? "CONTAINER" :
+                hs.container == mc.player.getInventory() ? "PLAYER_INV" :
+                hs instanceof CreativeModeInventoryScreen.SlotWrapper ?
+                        "SlotWrapper(" + ((CreativeModeInventoryScreen.SlotWrapper) hs).target.index + ")" : "OTHER",
+                hs.index, hs.getContainerSlot());
 
         if (hs.container == CreativeModeInventoryScreen.CONTAINER) {
-            debugLog("  branch=CONTAINER");
+            SwapLog.debug("  branch=CONTAINER");
             ItemStack held = handStack.copy();
             ItemStack item = hs.getItem().copyWithCount(1);
-            debugLog("  held=" + (held.isEmpty()?"EMPTY":held.getDisplayName().getString()) + " item=" + item.getDisplayName().getString());
+            SwapLog.debug("  held={} item={}",
+                    held.isEmpty() ? "EMPTY" : held.getDisplayName().getString(),
+                    item.getDisplayName().getString());
             if (!held.isEmpty()) {
                 int f = freeSlot(mc);
-                debugLog("  freeSlot=" + f);
+                SwapLog.debug("  freeSlot={}", f);
                 if (f >= 0 && f < mc.player.getInventory().items.size()) {
                     mc.player.getInventory().items.set(f, held.copy());
                     mc.gameMode.handleCreativeModeItemAdd(held.copy(), menuHotbarStart + f);
-                    debugLog("  items.set(" + f + ",held) + addItem(" + (menuHotbarStart+f) + ")");
                 }
             }
             if (sel < mc.player.getInventory().items.size()) {
                 mc.player.getInventory().items.set(sel, item);
                 mc.gameMode.handleCreativeModeItemAdd(item, heldIdx);
-                debugLog("  items.set(" + sel + ",item) + addItem(" + heldIdx + ")");
             }
             SwapKeyState.closePendingTicks = 1;
             return true;
@@ -424,10 +515,10 @@ public class InstantSwapClient {
         // Only applies on the inventory/survival tab (not creative item tabs)
         int csi = hs.getContainerSlot();
         if (cs.isInventoryOpen() && (csi == 45 || (csi >= 5 && csi <= 8))) {
-            debugLog("  branch=CREATIVE_EQUIP csi=" + csi + " sel=" + sel);
+            SwapLog.debug("  branch=CREATIVE_EQUIP csi={} sel={}", csi, sel);
             // Slot type validation — reject items that don't fit the equipment slot
             if (!handStack.isEmpty() && !hs.mayPlace(handStack)) {
-                debugLog("  mayPlace rejected -> false");
+                SwapLog.debug("  mayPlace rejected -> false");
                 return false;
             }
             // Armor type validation
@@ -437,13 +528,14 @@ public class InstantSwapClient {
                                         csi == 7 ? EquipmentSlot.LEGS : EquipmentSlot.FEET;
                 EquipmentSlot actual = mc.player.getEquipmentSlotForItem(handStack);
                 if (!actual.isArmor() || actual != expected) {
-                    debugLog("  armor mismatch: expected=" + expected + " actual=" + actual + " -> false");
+                    SwapLog.debug("  armor mismatch: expected={} actual={} -> false", expected, actual);
+                    SwapToast.error("toast.susinstantswap.armor_slot_mismatch");
                     return false;
                 }
             }
             mc.gameMode.handleInventoryMouseClick(
                 cs.getMenu().containerId, csi, sel, ClickType.SWAP, mc.player);
-            debugLog("  handleInventoryMouseClick(slot=" + csi + " hotbar=" + sel + " SWAP)");
+            SwapLog.debug("  handleInventoryMouseClick(slot={} hotbar={} SWAP)", csi, sel);
             SwapKeyState.closePendingTicks = 1;
             return true;
         }
@@ -451,41 +543,40 @@ public class InstantSwapClient {
         // SlotWrapper — hotbar slots on creative item tabs (not inventory tab)
         if (hs instanceof CreativeModeInventoryScreen.SlotWrapper w) {
             int t = w.target.index;
-            debugLog("  branch=SlotWrapper t=" + t + " heldMenuIdx=" + heldIdx);
+            SwapLog.debug("  branch=SlotWrapper t={} heldMenuIdx={}", t, heldIdx);
             if (isPlayerInventorySlot(w) && t != heldIdx) {
                 ItemStack ti = cs.getMenu().getSlot(t).getItem().copy();
                 ItemStack hi = cs.getMenu().getSlot(heldIdx).getItem().copy();
                 int invIdx = t >= menuHotbarStart ? t - menuHotbarStart : t;
-                debugLog("  ti=" + ti.getDisplayName().getString() + " hi=" + hi.getDisplayName().getString() + " invIdx=" + invIdx);
+                SwapLog.debug("  ti={} hi={} invIdx={}",
+                        ti.getDisplayName().getString(), hi.getDisplayName().getString(), invIdx);
                 safeSet(mc, sel, ti);
                 mc.gameMode.handleCreativeModeItemAdd(ti, heldIdx);
-                debugLog("  safeSet(" + sel + ",ti) + addItem(" + heldIdx + ")");
                 safeSet(mc, invIdx, hi);
                 mc.gameMode.handleCreativeModeItemAdd(hi, t);
-                debugLog("  safeSet(" + invIdx + ",hi) + addItem(" + t + ")");
                 SwapKeyState.closePendingTicks = 1;
                 return true;
             }
-            debugLog("  SKIP: sameSlot=" + (t==heldIdx) + " isPlayerInv=" + isPlayerInventorySlot(w));
+            SwapLog.debug("  SKIP: sameSlot={} isPlayerInv={}", t == heldIdx, isPlayerInventorySlot(w));
             return false;
         }
 
         int c2 = hs.getContainerSlot();
-        debugLog("  branch=REGULAR c2=" + c2);
+        SwapLog.debug("  branch=REGULAR c2={}", c2);
         if (c2 >= 0 && c2 < hotbarSize && c2 != sel) {
             ItemStack hi = handStack.copy();
             ItemStack oi = mc.player.getInventory().getItem(c2).copy();
-            debugLog("  hi(hand->target)=" + (hi.isEmpty()?"EMPTY":hi.getDisplayName().getString()) + " oi(target->hotbar)=" + oi.getDisplayName().getString());
+            SwapLog.debug("  hi(hand->target)={} oi(target->hotbar)={}",
+                    hi.isEmpty() ? "EMPTY" : hi.getDisplayName().getString(),
+                    oi.getDisplayName().getString());
             safeSet(mc, sel, oi);
             mc.gameMode.handleCreativeModeItemAdd(oi, heldIdx);
-            debugLog("  safeSet(" + sel + ",oi) + addItem(" + heldIdx + ")");
             safeSet(mc, c2, hi);
             mc.gameMode.handleCreativeModeItemAdd(hi, menuHotbarStart + c2);
-            debugLog("  safeSet(" + c2 + ",hi) + addItem(" + (menuHotbarStart+c2) + ")");
             SwapKeyState.closePendingTicks = 1;
             return true;
         }
-        debugLog("  NO MATCH -> false");
+        SwapLog.debug("  NO MATCH -> false");
         return false;
     }
 
@@ -528,15 +619,15 @@ public class InstantSwapClient {
         if (hotbarStack.isEmpty()) return false;
         Minecraft mc = Minecraft.getInstance();
         var playerInv = mc.player.getInventory();
-        debugLog("isContainerOpener: hotbarItem=" + hotbarStack.getItem());
+        SwapLog.debug("isContainerOpener: hotbarItem={}", hotbarStack.getItem());
         int idx = 0;
         for (Slot slot : menu.slots) {
             if (slot.container == playerInv) { idx++; continue; }
             if (!slot.hasItem()) { idx++; continue; }
             boolean locked = !slot.mayPickup(mc.player);
             boolean sameItem = slot.getItem().getItem() == hotbarStack.getItem();
-            debugLog("  slot[" + idx + "] container=" + slot.container.getClass().getSimpleName()
-                    + " item=" + slot.getItem().getItem() + " locked=" + locked + " sameItem=" + sameItem);
+            SwapLog.debug("  slot[{}] container={} item={} locked={} sameItem={}",
+                    idx, slot.container.getClass().getSimpleName(), slot.getItem().getItem(), locked, sameItem);
             if (locked && sameItem) return true;
             idx++;
         }
@@ -566,14 +657,22 @@ public class InstantSwapClient {
     }
 
     private static boolean isInventoryKeyPhysicallyDown(Minecraft mc) {
-        InputConstants.Key key = mc.options.keyInventory.getKey();
-        if (key.getType() != InputConstants.Type.KEYSYM) return false;
-        return GLFW.glfwGetKey(mc.getWindow().getWindow(), key.getValue()) == GLFW.GLFW_PRESS;
+        for (InputConstants.Key key : SwapKeyState.getTargetKeys()) {
+            if (key.getType() == InputConstants.Type.KEYSYM
+                    && GLFW.glfwGetKey(mc.getWindow().getWindow(), key.getValue()) == GLFW.GLFW_PRESS) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isInventoryKeyEvent(Minecraft mc, InputEvent.Key event) {
-        InputConstants.Key ik = mc.options.keyInventory.getKey();
-        return ik.getType() == InputConstants.Type.KEYSYM && event.getKey() == ik.getValue();
+        for (InputConstants.Key target : SwapKeyState.getTargetKeys()) {
+            if (target.getType() == InputConstants.Type.KEYSYM && event.getKey() == target.getValue()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isGuiSwapKeyEvent(InputEvent.Key event) {
@@ -623,10 +722,7 @@ public class InstantSwapClient {
 
     private static void playSwapSound(Minecraft mc) {
         if (!config.soundEnabled.get() || mc.player == null) return;
+        SwapLog.debug("Playing swap sound");
         mc.player.playNotifySound(SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.8f, 1.0f);
-    }
-
-    private static void debugLog(String msg) {
-        if (config.debug.get()) LOGGER.info("[SusInstantSwap] {}", msg);
     }
 }

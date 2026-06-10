@@ -10,6 +10,7 @@ public class SwapConfig {
     public final ModConfigSpec.BooleanValue guiSwapEnabled;
     public final ModConfigSpec.BooleanValue emptySlotSwapEnabled;
     public final ModConfigSpec.BooleanValue rowSwapEnabled;
+    public final ModConfigSpec.BooleanValue toastEnabled;
     public final ModConfigSpec.BooleanValue debug;
 
     public SwapConfig(ModConfigSpec.Builder builder) {
@@ -28,6 +29,8 @@ public class SwapConfig {
                 .comment("Also swap empty slots").define("emptySlotSwapEnabled", false);
         rowSwapEnabled = builder.translation("config.susinstantswap.rowSwapEnabled")
                 .comment("In survival inventory, show arrow icons on the left to swap entire rows with the hotbar").define("rowSwapEnabled", true);
+        toastEnabled = builder.translation("config.susinstantswap.toastEnabled")
+                .comment("Show action bar toast messages (warnings, errors, info)").define("toastEnabled", true);
         debug = builder.translation("config.susinstantswap.debug")
                 .comment("Debug Logging").define("debug", false);
     }

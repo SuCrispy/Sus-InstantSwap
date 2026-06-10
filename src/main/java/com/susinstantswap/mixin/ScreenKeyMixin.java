@@ -35,11 +35,17 @@ public class ScreenKeyMixin {
         if (mc == null || mc.options == null) return;
 
         InputConstants.Key pressed = InputConstants.getKey(keyCode, scanCode);
-        if (!pressed.equals(mc.options.keyInventory.getKey())) return;
+        if (!SwapKeyState.isTargetKey(pressed)) return;
 
         if (SwapKeyState.inventoryKeyHeld) {
             // REPEAT — block close to prevent flicker during long press
             cir.setReturnValue(false);
+            return;
+        }
+
+        // If screen was opened by a non-vanilla key (e.g. backpack mod),
+        // let vanilla handle normally — no swap, no interception.
+        if (!SwapKeyState.lastTriggerKeyIsVanilla) {
             return;
         }
 
