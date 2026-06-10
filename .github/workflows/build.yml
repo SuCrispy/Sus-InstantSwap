@@ -1,0 +1,171 @@
+name: CI - Build & Auto Release
+
+on:
+  push:
+    branches:
+      - '**'
+      - '!main'
+      - '!master'
+  workflow_dispatch:
+
+jobs:
+  # ============================================================
+  # 构建作业：产出 JAR（已排除 sources jar）
+  # ============================================================
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version-file: '.java-version'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew build
+
+      # 🔥 关键修改：删除 sources jar，只保留普通 mod jar
+      - name: Remove sources jar
+        run: rm -f build/libs/*-sources.jar
+
+      - name: Upload built JARs as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mod-jars
+          path: build/libs/*.jar
+          if-no-files-found: error
+
+  # ============================================================
+  # 自动发布作业：合并同一版本的不同平台到同一个 Release
+  # ============================================================
+  auto-release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: |
+      github.ref_name != 'main' && github.ref_name != 'master'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code (full history for changelog)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download built JARs
+        uses: actions/download-artifact@v4
+        with:
+          name: mod-jars
+          path: build/libs/
+
+      # 🔥 再次确保没有 sources jar（安全起见）
+      - name: Remove sources jar again
+        run: rm -f build/libs/*-sources.jar
+
+      - name: Extract version and platform
+        id: info
+        run: |
+          JAR_FILE=$(ls build/libs/*.jar | head -n 1)
+          echo "Found jar: $JAR_FILE"
+          BASENAME=$(basename "$JAR_FILE" .jar)
+          VERSION=$(echo "$BASENAME" | grep -oP '\d+\.\d+(\.\d+)?' | head -1 || true)
+          if [ -z "$VERSION" ]; then
+            echo "::error::无法从文件名提取版本号: $BASENAME"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          PLATFORM=$(echo "$BRANCH_NAME" | sed -E 's/(^|[-_])([a-z])/\1\u\2/g' | tr '_-' '  ')
+          echo "platform=$PLATFORM" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog for this platform
+        id: changelog
+        run: |
+          VERSION="${{ steps.info.outputs.version }}"
+          BODY_FILE=$(mktemp)
+          if [ -f "CHANGELOG.md" ]; then
+            sed -n "/^## \[\{0,1\}$VERSION\]\{0,1\}/,/^## /p" CHANGELOG.md | sed '1d;$d' > "$BODY_FILE" || true
+          fi
+          if [ ! -s "$BODY_FILE" ]; then
+            echo "Auto-release for version $VERSION (${{ steps.info.outputs.platform }})." > "$BODY_FILE"
+          fi
+          echo "body_file=$BODY_FILE" >> $GITHUB_OUTPUT
+
+      - name: Create or Update Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          TAG="v${{ steps.info.outputs.version }}"
+          PLATFORM="${{ steps.info.outputs.platform }}"
+          BODY_FILE="${{ steps.changelog.outputs.body_file }}"
+
+          NOTES=$(cat "$BODY_FILE")
+          PLATFORM_SECTION="## $PLATFORM"$'\n\n'"$NOTES"
+
+          echo "=============================================="
+          echo "  Tag:        $TAG"
+          echo "  Platform:   $PLATFORM"
+          echo "=============================================="
+
+          if gh release view "$TAG" &>/dev/null; then
+            echo ""
+            echo ">>> Release $TAG 已存在 — 将更新..."
+
+            CURRENT_BODY=$(gh release view "$TAG" --json body -q '.body')
+            CLEAN_BODY=$(echo "$CURRENT_BODY" | awk -v hdr="## $PLATFORM" '
+              BEGIN { skip=0 }
+              $0 == hdr  { skip=1; next }
+              skip && /^## / { skip=0 }
+              !skip { print }
+            ')
+            if [ -z "$CLEAN_BODY" ]; then
+              NEW_BODY="$PLATFORM_SECTION"
+            else
+              NEW_BODY="${CLEAN_BODY}"$'\n\n'"${PLATFORM_SECTION}"
+            fi
+
+            gh release edit "$TAG" --notes "$NEW_BODY"
+            echo "  ✔ Release 描述已更新（平台: $PLATFORM）"
+
+            # 上传 JAR（已保证没有 sources jar）
+            gh release upload "$TAG" build/libs/*.jar --clobber
+            echo "  ✔ JAR 文件已上传"
+
+            echo ""
+            echo ">>> Release $TAG 更新完成。"
+
+          else
+            echo ""
+            echo ">>> Release $TAG 不存在 — 将创建..."
+
+            if ! git ls-remote --tags origin "refs/tags/$TAG" | grep -q .; then
+              git tag "$TAG"
+              git push origin "$TAG"
+              echo "  ✔ Tag $TAG 已创建并推送"
+            else
+              git fetch origin tag "$TAG" --no-tags 2>/dev/null || true
+              echo "  → Tag $TAG 已存在于远程，已拉取"
+            fi
+
+            gh release create "$TAG" \
+              --title "${{ steps.info.outputs.version }}" \
+              --notes "$PLATFORM_SECTION" \
+              --draft=false \
+              --prerelease=false \
+              build/libs/*.jar
+
+            echo ""
+            echo ">>> Release $TAG 创建完成。"
+          fi
+
+          rm -f "$BODY_FILE"
