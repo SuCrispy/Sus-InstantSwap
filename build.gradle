@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '1.0.0'
 }
 
-base { archivesName = 'Sus_InstantSwap-2.1.0-NF1.21.1' }
+base { archivesName = 'Sus_InstantSwap-2.2.0-NF1.21.1' }
 
 java {
     toolchain { languageVersion = JavaLanguageVersion.of(21) }
