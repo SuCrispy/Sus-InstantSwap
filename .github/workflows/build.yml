@@ -1,0 +1,189 @@
+name: CI - Build & Auto Release
+
+on:
+  push:
+    branches:
+      - '**'          # 监听所有分支的推送
+      - '!main'       # 主分支无实际代码，排除
+      - '!master'
+    # 不监听 tags，避免循环触发
+  workflow_dispatch:   # 允许手动触发
+
+jobs:
+  #######################################################################
+  # 构建作业：在任何分支上运行，产出 JAR 文件
+  #######################################################################
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 设置 JDK（从 .java-version 文件读取版本号，方便多分支不同版本）
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version-file: '.java-version'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew build
+
+      - name: Upload built JARs as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mod-jars
+          path: build/libs/*.jar
+          if-no-files-found: error
+
+  #######################################################################
+  # 自动发布作业：同一 mod 版本的不同平台合并到同一个 Release
+  #######################################################################
+  auto-release:
+    needs: build
+    runs-on: ubuntu-latest
+    # 条件：排除主分支，其他所有分支都尝试自动发布
+    if: |
+      github.ref_name != 'main' && github.ref_name != 'master'
+    permissions:
+      contents: write          # 用于创建 tag 和 release
+
+    steps:
+      - name: Checkout code (full history for changelog)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # 获取完整历史，以便读取 CHANGELOG
+
+      - name: Download built JARs
+        uses: actions/download-artifact@v4
+        with:
+          name: mod-jars
+          path: build/libs/
+
+      # 步骤 1：提取 mod 版本号 + 从分支名推导平台标识
+      - name: Extract version and platform
+        id: info
+        run: |
+          JAR_FILE=$(ls build/libs/*.jar | head -n 1)
+          echo "Found jar: $JAR_FILE"
+          BASENAME=$(basename "$JAR_FILE" .jar)
+          # 匹配文件名中第一个数字版本（mod 版本），而非末尾的 MC 版本
+          VERSION=$(echo "$BASENAME" | grep -oP '\d+\.\d+(\.\d+)?' | head -1 || true)
+          if [ -z "$VERSION" ]; then
+            echo "::error::无法从文件名提取版本号: $BASENAME"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # 从分支名构造可读的平台标签
+          # neoforge-1.21.1  → NeoForge 1.21.1
+          # forge-26.1       → Forge 26.1
+          # fabric-1.21      → Fabric 1.21
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          PLATFORM=$(echo "$BRANCH_NAME" | sed -E 's/(^|[-_])([a-z])/\1\u\2/g' | tr '_-' '  ')
+          echo "platform=$PLATFORM" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      # 步骤 2：从 CHANGELOG.md 提取当前版本的变更内容，并写入文件（安全方式）
+      - name: Generate changelog for this platform
+        id: changelog
+        run: |
+          VERSION="${{ steps.info.outputs.version }}"
+          # 将提取的 changelog 内容直接写入临时文件，避免 shell 解析
+          BODY_FILE=$(mktemp)
+          if [ -f "CHANGELOG.md" ]; then
+            sed -n "/^## \[\{0,1\}$VERSION\]\{0,1\}/,/^## /p" CHANGELOG.md | sed '1d;$d' > "$BODY_FILE" || true
+          fi
+          # 如果文件为空，写入默认信息
+          if [ ! -s "$BODY_FILE" ]; then
+            echo "Auto-release for version $VERSION (${{ steps.info.outputs.platform }})." > "$BODY_FILE"
+          fi
+          # 将文件路径保存到输出，供下一步使用
+          echo "body_file=$BODY_FILE" >> $GITHUB_OUTPUT
+
+      # 步骤 3：创建或更新 Release（同一版本合并到同一个 Release）
+      - name: Create or Update Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          TAG="v${{ steps.info.outputs.version }}"
+          PLATFORM="${{ steps.info.outputs.platform }}"
+          BODY_FILE="${{ steps.changelog.outputs.body_file }}"
+
+          # 从文件安全地读取 changelog 内容
+          NOTES=$(cat "$BODY_FILE")
+          # 构建当前平台的描述段落
+          PLATFORM_SECTION="## $PLATFORM"$'\n\n'"$NOTES"
+
+          echo "=============================================="
+          echo "  Tag:        $TAG"
+          echo "  Platform:   $PLATFORM"
+          echo "=============================================="
+
+          # ── 检查 Release 是否已存在 ──
+          if gh release view "$TAG" &>/dev/null; then
+            echo ""
+            echo ">>> Release $TAG 已存在 — 将更新..."
+
+            # 获取当前 Release 描述
+            CURRENT_BODY=$(gh release view "$TAG" --json body -q '.body')
+
+            # 移除已存在的同平台段落（从 "## Platform" 到下一个 "## " 或结束）
+            CLEAN_BODY=$(echo "$CURRENT_BODY" | awk -v hdr="## $PLATFORM" '
+              BEGIN { skip=0 }
+              $0 == hdr  { skip=1; next }
+              skip && /^## / { skip=0 }
+              !skip { print }
+            ')
+
+            # 追加当前平台段落到最后
+            if [ -z "$CLEAN_BODY" ]; then
+              NEW_BODY="$PLATFORM_SECTION"
+            else
+              NEW_BODY="${CLEAN_BODY}"$'\n\n'"${PLATFORM_SECTION}"
+            fi
+
+            # 更新 Release 描述
+            gh release edit "$TAG" --notes "$NEW_BODY"
+            echo "  ✔ Release 描述已更新（平台: $PLATFORM）"
+
+            # 上传 JAR（覆盖同名文件）
+            gh release upload "$TAG" build/libs/*.jar --clobber
+            echo "  ✔ JAR 文件已上传"
+
+            echo ""
+            echo ">>> Release $TAG 更新完成。"
+
+          else
+            echo ""
+            echo ">>> Release $TAG 不存在 — 将创建..."
+
+            # 确保 tag 已推送
+            if ! git ls-remote --tags origin "refs/tags/$TAG" | grep -q .; then
+              git tag "$TAG"
+              git push origin "$TAG"
+              echo "  ✔ Tag $TAG 已创建并推送"
+            else
+              git fetch origin tag "$TAG" --no-tags 2>/dev/null || true
+              echo "  → Tag $TAG 已存在于远程，已拉取"
+            fi
+
+            # 创建 Release
+            gh release create "$TAG" \
+              --title "${{ steps.info.outputs.version }}" \
+              --notes "$PLATFORM_SECTION" \
+              --draft=false \
+              --prerelease=false \
+              build/libs/*.jar
+
+            echo ""
+            echo ">>> Release $TAG 创建完成。"
+          fi
+
+          # 清理临时文件
+          rm -f "$BODY_FILE"
