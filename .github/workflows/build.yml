@@ -83,29 +83,26 @@ jobs:
           # forge-26.1       → Forge 26.1
           # fabric-1.21      → Fabric 1.21
           BRANCH_NAME="${GITHUB_REF#refs/heads/}"
-          # sed: 将分支名中的分隔符转换为单词边界; tr: 将 '-' 和 '_' 替换为空格
-          # 注意 tr 字符集中 '-' 必须放在末尾,避免被解析为命令行选项
           PLATFORM=$(echo "$BRANCH_NAME" | sed -E 's/(^|[-_])([a-z])/\1\u\2/g' | tr '_-' '  ')
           echo "platform=$PLATFORM" >> $GITHUB_OUTPUT
           echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
-      # 步骤 2：从 CHANGELOG.md 提取当前版本的变更内容
+      # 步骤 2：从 CHANGELOG.md 提取当前版本的变更内容，并写入文件（安全方式）
       - name: Generate changelog for this platform
         id: changelog
         run: |
           VERSION="${{ steps.info.outputs.version }}"
-          NOTES=""
+          # 将提取的 changelog 内容直接写入临时文件，避免 shell 解析
+          BODY_FILE=$(mktemp)
           if [ -f "CHANGELOG.md" ]; then
-            # 提取从 "## [版本号]" 或 "## 版本号" 开始，到下一个 "## " 之前的内容
-            NOTES=$(sed -n "/^## \[\{0,1\}$VERSION\]\{0,1\}/,/^## /p" CHANGELOG.md | sed '1d;$d' || true)
+            sed -n "/^## \[\{0,1\}$VERSION\]\{0,1\}/,/^## /p" CHANGELOG.md | sed '1d;$d' > "$BODY_FILE" || true
           fi
-          if [ -z "$NOTES" ]; then
-            NOTES="Auto-release for version $VERSION (${{ steps.info.outputs.platform }})."
+          # 如果文件为空，写入默认信息
+          if [ ! -s "$BODY_FILE" ]; then
+            echo "Auto-release for version $VERSION (${{ steps.info.outputs.platform }})." > "$BODY_FILE"
           fi
-          delimiter="EOF_NOTES"
-          echo "body<<$delimiter" >> $GITHUB_OUTPUT
-          echo "$NOTES" >> $GITHUB_OUTPUT
-          echo "$delimiter" >> $GITHUB_OUTPUT
+          # 将文件路径保存到输出，供下一步使用
+          echo "body_file=$BODY_FILE" >> $GITHUB_OUTPUT
 
       # 步骤 3：创建或更新 Release（同一版本合并到同一个 Release）
       - name: Create or Update Release
@@ -116,8 +113,10 @@ jobs:
 
           TAG="v${{ steps.info.outputs.version }}"
           PLATFORM="${{ steps.info.outputs.platform }}"
-          NOTES="${{ steps.changelog.outputs.body }}"
+          BODY_FILE="${{ steps.changelog.outputs.body_file }}"
 
+          # 从文件安全地读取 changelog 内容
+          NOTES=$(cat "$BODY_FILE")
           # 构建当前平台的描述段落
           PLATFORM_SECTION="## $PLATFORM"$'\n\n'"$NOTES"
 
@@ -185,3 +184,6 @@ jobs:
             echo ""
             echo ">>> Release $TAG 创建完成。"
           fi
+
+          # 清理临时文件
+          rm -f "$BODY_FILE"
