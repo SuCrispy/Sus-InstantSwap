@@ -37,14 +37,14 @@ public final class SwapKeyState {
      */
     private static final String[] BACKPACK_KEY_PATTERNS = {
             "key.sophisticatedbackpacks.open_backpack",
-            "key.travelersbackpack.open_backpack",
+            "key.travelersbackpack.inventory",
             "key:omnis_backpack",
             "key.backpacked.open_backpack",
             "key.inmis.open_backpack",
             "key.goodbackpacks.open_backpack",
             "key.resource_backpacks.open_backpack",
-            "key.ironbackpacks.open_backpack",
-            "key.simplybackpacks.open_backpack",
+            "key.ironbackpacks.open",
+            "key.simplybackpacks.backpackopen.desc",
     };
 
     /**
