@@ -22,9 +22,7 @@
   "config.susinstantswap.debug": "Dziennik debugowania",
   "config.susinstantswap.debug.tooltip": "Wyświetlaj informacje debugowania w dzienniku gry.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Wymiana pustych slotów wyłączona, nie można wymienić z pustym slotem",
-  "toast.susinstantswap.both_slots_empty": "Oba sloty są puste, nie ma czego wymieniać",
-  "toast.susinstantswap.not_player_inventory": "Można wymieniać tylko przedmioty w plecaku lub na pasku szybkiego dostępu",
+  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "Przedmiot w ręce nie może być umieszczony w tym slocie",
-  "toast.susinstantswap.armor_slot_mismatch": "Typ przedmiotu nie pasuje do slotu wyposażenia",
-  "toast.susinstantswap.unknown_error": "Nieznany błąd, wymiana nieudana"
+  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
 }

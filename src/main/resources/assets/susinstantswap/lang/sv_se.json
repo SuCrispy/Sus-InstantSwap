@@ -22,9 +22,7 @@
   "config.susinstantswap.debug": "Felsökningslogg",
   "config.susinstantswap.debug.tooltip": "Skriv ut felsökningsinformation i spelloggen.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Byte av tomma platser är inaktiverat, kan inte byta med tom plats",
-  "toast.susinstantswap.both_slots_empty": "Båda platserna är tomma, inget att byta",
-  "toast.susinstantswap.not_player_inventory": "Kan bara byta föremål i ryggsäcken eller hotbaren",
+  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "Föremålet i handen kan inte placeras på denna plats",
-  "toast.susinstantswap.armor_slot_mismatch": "Föremålstypen matchar inte utrustningsplatsen",
-  "toast.susinstantswap.unknown_error": "Ett okänt fel uppstod, bytet misslyckades"
+  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
 }

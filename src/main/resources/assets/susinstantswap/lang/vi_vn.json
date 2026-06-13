@@ -22,9 +22,7 @@
   "config.susinstantswap.debug": "Nhật Ký Gỡ Lỗi",
   "config.susinstantswap.debug.tooltip": "Xuất thông tin gỡ lỗi ra nhật ký trò chơi.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Trao đổi ô trống bị tắt, không thể trao đổi với ô trống",
-  "toast.susinstantswap.both_slots_empty": "Cả hai ô đều trống, không có gì để trao đổi",
-  "toast.susinstantswap.not_player_inventory": "Chỉ có thể trao đổi vật phẩm trong ba lô hoặc thanh nóng",
+  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "Vật phẩm trên tay không thể đặt vào ô này",
-  "toast.susinstantswap.armor_slot_mismatch": "Loại vật phẩm không khớp với ô trang bị",
-  "toast.susinstantswap.unknown_error": "Đã xảy ra lỗi không xác định, trao đổi thất bại"
+  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
 }

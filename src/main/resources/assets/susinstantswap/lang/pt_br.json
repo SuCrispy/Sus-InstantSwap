@@ -22,9 +22,7 @@
   "config.susinstantswap.debug": "Registro de depuração",
   "config.susinstantswap.debug.tooltip": "Exibir informações de depuração no registro do jogo.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Troca de espaços vazios desativada, não é possível trocar com espaço vazio",
-  "toast.susinstantswap.both_slots_empty": "Ambos os espaços estão vazios, nada para trocar",
-  "toast.susinstantswap.not_player_inventory": "Só é possível trocar itens na mochila ou barra rápida",
+  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "O item na mão não pode ser colocado neste espaço",
-  "toast.susinstantswap.armor_slot_mismatch": "O tipo de item não corresponde ao espaço de equipamento",
-  "toast.susinstantswap.unknown_error": "Erro desconhecido, troca falhou"
+  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
 }

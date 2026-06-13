@@ -22,9 +22,7 @@
   "config.susinstantswap.debug": "Журнал налагодження",
   "config.susinstantswap.debug.tooltip": "Виводити інформацію налагодження в ігровий журнал.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Обмін порожніх слотів вимкнено, неможливо обміняти з порожнім слотом",
-  "toast.susinstantswap.both_slots_empty": "Обидва слоти порожні, нема чого міняти",
-  "toast.susinstantswap.not_player_inventory": "Можна обмінювати лише предмети в рюкзаку або хотбарі",
+  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "Предмет у руці не можна помістити в цей слот",
-  "toast.susinstantswap.armor_slot_mismatch": "Тип предмета не відповідає слоту спорядження",
-  "toast.susinstantswap.unknown_error": "Сталася невідома помилка, обмін не вдався"
+  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
 }

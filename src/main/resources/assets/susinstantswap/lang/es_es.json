@@ -22,9 +22,7 @@
   "config.susinstantswap.debug": "Registro de depuración",
   "config.susinstantswap.debug.tooltip": "Mostrar información de depuración en el registro del juego.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Intercambio de huecos vacíos desactivado, no se puede intercambiar con hueco vacío",
-  "toast.susinstantswap.both_slots_empty": "Ambos huecos están vacíos, nada que intercambiar",
-  "toast.susinstantswap.not_player_inventory": "Solo se pueden intercambiar objetos en la mochila o barra rápida",
+  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "El objeto en la mano no se puede colocar en este hueco",
-  "toast.susinstantswap.armor_slot_mismatch": "El tipo de objeto no coincide con el hueco de equipamiento",
-  "toast.susinstantswap.unknown_error": "Error desconocido, el intercambio falló"
+  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
 }

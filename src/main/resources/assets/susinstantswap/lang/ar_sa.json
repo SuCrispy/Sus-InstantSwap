@@ -22,9 +22,7 @@
   "config.susinstantswap.debug": "سجل التصحيح",
   "config.susinstantswap.debug.tooltip": "إخراج معلومات التصحيح إلى سجل اللعبة.",
   "toast.susinstantswap.empty_slot_swap_disabled": "مبادلة الخانات الفارغة معطلة، لا يمكن المبادلة مع خانة فارغة",
-  "toast.susinstantswap.both_slots_empty": "كلتا الخانتين فارغتان، لا شيء للمبادلة",
-  "toast.susinstantswap.not_player_inventory": "يمكن فقط مبادلة العناصر في حقيبة الظهر أو شريط الوصول السريع",
+  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "لا يمكن وضع العنصر في اليد في هذه الخانة",
-  "toast.susinstantswap.armor_slot_mismatch": "نوع العنصر لا يتطابق مع خانة المعدات",
-  "toast.susinstantswap.unknown_error": "حدث خطأ غير معروف، فشلت المبادلة"
+  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
 }

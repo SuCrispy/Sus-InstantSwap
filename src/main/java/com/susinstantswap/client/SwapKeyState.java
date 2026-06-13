@@ -36,15 +36,41 @@ public final class SwapKeyState {
      * Add new entries here when supporting additional mods.
      */
     private static final String[] BACKPACK_KEY_PATTERNS = {
+            // Sophisticated Backpacks — uses "keybind." prefix via TranslationHelper
+            "keybind.sophisticatedbackpacks.open_backpack",
             "key.sophisticatedbackpacks.open_backpack",
+
+            // Simply Backpacks
+            "key.simplybackpacks.backpackopen",
+            "key.simplybackpacks.open_backpack",
+
+            // Traveller's Backpack
             "key.travelersbackpack.inventory",
-            "key:omnis_backpack",
+            "key.travelersbackpack.open_backpack",
+
+            // Omnis Backpack
+            "key.omnis_backpack",
+            "key.omnis_backpack.open",
+
+            // Backpacked
             "key.backpacked.open_backpack",
+            "key.backpacked.backpack",
+
+            // Inmis
             "key.inmis.open_backpack",
+            "key.inmis.backpack",
+
+            // Good Backpacks — modid "good_backpacks" (underscore)
+            "key.good_backpacks.open_backpack",
             "key.goodbackpacks.open_backpack",
+
+            // Resource Backpacks — modid "resource_backpacks" (underscore)
             "key.resource_backpacks.open_backpack",
+            "key.resourcebackpacks.open_backpack",
+
+            // Iron Backpacks
+            "key.ironbackpacks.open_backpack",
             "key.ironbackpacks.open",
-            "key.simplybackpacks.backpackopen.desc",
     };
 
     /**
@@ -64,19 +90,10 @@ public final class SwapKeyState {
             lastTriggerKeyIsVanilla = false;
             return;
         }
-        // A key is "vanilla for our purposes" if it matches ANY target key
-        // (inventory key + all tracked backpack-mod keys).
-        lastTriggerKeyIsVanilla = matchesAnyTargetKey(key);
-    }
-
-    /** Compares type and value against all target keys (inventory + backpack mods). */
-    private static boolean matchesAnyTargetKey(InputConstants.Key key) {
-        for (InputConstants.Key target : targetKeys) {
-            if (target.getType() == key.getType() && target.getValue() == key.getValue()) {
-                return true;
-            }
-        }
-        return false;
+        // Only the actual inventory key triggers swap behavior — backpack keys do not
+        lastTriggerKeyIsVanilla = trackedInventoryKey != null
+                && trackedInventoryKey.getType() == key.getType()
+                && trackedInventoryKey.getValue() == key.getValue();
     }
 
     private SwapKeyState() {}

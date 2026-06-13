@@ -22,9 +22,7 @@
   "config.susinstantswap.debug": "Ladicí protokol",
   "config.susinstantswap.debug.tooltip": "Vypisovat ladicí informace do herního protokolu.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Výměna prázdných slotů je zakázána, nelze vyměnit s prázdným slotem",
-  "toast.susinstantswap.both_slots_empty": "Oba sloty jsou prázdné, není co vyměnit",
-  "toast.susinstantswap.not_player_inventory": "Lze vyměnit pouze předměty v batohu nebo na panelu rychlého přístupu",
+  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "Předmět v ruce nelze umístit do tohoto slotu",
-  "toast.susinstantswap.armor_slot_mismatch": "Typ předmětu neodpovídá slotu výbavy",
-  "toast.susinstantswap.unknown_error": "Došlo k neznámé chybě, výměna selhala"
+  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
 }

@@ -22,9 +22,7 @@
   "config.susinstantswap.debug": "Registro di debug",
   "config.susinstantswap.debug.tooltip": "Mostra informazioni di debug nel registro di gioco.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Scambio slot vuoti disattivato, impossibile scambiare con slot vuoto",
-  "toast.susinstantswap.both_slots_empty": "Entrambi gli slot sono vuoti, niente da scambiare",
-  "toast.susinstantswap.not_player_inventory": "Puoi scambiare solo oggetti nello zaino o nella barra rapida",
+  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "L'oggetto in mano non può essere messo in questo slot",
-  "toast.susinstantswap.armor_slot_mismatch": "Il tipo di oggetto non corrisponde allo slot equipaggiamento",
-  "toast.susinstantswap.unknown_error": "Errore sconosciuto, scambio fallito"
+  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
 }

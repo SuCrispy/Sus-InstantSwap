@@ -3,7 +3,6 @@ package com.susinstantswap.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.susinstantswap.SwapLog;
 import com.susinstantswap.config.SwapConfig;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
@@ -12,13 +11,11 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -59,12 +56,16 @@ public class InstantSwapClient {
     private static boolean screenOpenedByInteract = false;
     private static Screen previousScreen = null;
 
-    // SWAP verification
+    // SWAP verification — array-based for 9-column row swap
+    private static final int MAX_VERIFY = 9;
     private static int swapVerifyTicks = 0;
-    private static int verifyHoverIdx = -1;
-    private static int verifySelIdx = -1;
-    private static ItemStack verifyPreHovered = ItemStack.EMPTY;
-    private static ItemStack verifyPreHotbar = ItemStack.EMPTY;
+    private static int verifyCount = 0;
+    private static int verifyContainerId = -1;
+    private static final int[] verifySlotIdx = new int[MAX_VERIFY];
+    private static final int[] verifyHotbarIdx = new int[MAX_VERIFY];
+    private static final ItemStack[] verifyPreSlot = new ItemStack[MAX_VERIFY];
+    private static final ItemStack[] verifyPreHotbar = new ItemStack[MAX_VERIFY];
+    private static final boolean[] verifyActive = new boolean[MAX_VERIFY];
 
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
@@ -103,12 +104,7 @@ public class InstantSwapClient {
         if (cfg == null || !cfg.rowSwapEnabled.get()) return;
         if (!(event.getScreen() instanceof AbstractContainerScreen<?> screen)) return;
 
-        String name = screen.getClass().getName();
-        if (!name.contains("sophisticated") && !name.contains("flanks255")
-                && !name.contains("BackpackScreen") && !name.contains("omnis")
-                && !name.contains("backpacked") && !name.contains("inmis")
-                && !name.contains("goodbackpacks") && !name.contains("resource_backpacks")
-                && !name.contains("ironbackpacks")) return;
+        if (!BackpackScreenMatcher.isBackpackScreen(screen)) return;
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
@@ -279,12 +275,46 @@ public class InstantSwapClient {
 
         if (screen instanceof InventoryScreen && !isPlayerInventorySlot(hs)) return false;
 
+        // Capture pre-swap state BEFORE swapSingleSlot (which calls
+        // handleInventoryMouseClick → menu.clicked() updates local state)
+        ItemStack preSlot = hs.getItem().copy();
+        ItemStack preHotbar = mc.player.getInventory().getItem(sel).copy();
+
         int closeDelay = isVanillaInventory(screen) ? 1 : 2;
+
+        // ── For the selected/held hotbar slot in backpack mod screens,
+        //    use PICKUP directly ──
+        //    Reason: many backpack mods (Traveller's Backpack, etc.) block
+        //    SWAP when the target hotbar slot == inventory.selected.
+        //    Using PICKUP avoids the 2-tick verify delay.
+        if (!isVanillaInventory(screen) && isBackpackScreen(screen)) {
+            Slot hotbarSlot = findHotbarMenuSlot(screen, sel);
+            if (hotbarSlot != null && (hs.hasItem() || hotbarSlot.hasItem())) {
+                boolean canPickup = !hs.hasItem() || hs.mayPickup(mc.player);
+                boolean canPickupHotbar = !hotbarSlot.hasItem() || hotbarSlot.mayPickup(mc.player);
+                ItemStack hand = mc.player.getInventory().getItem(sel);
+                boolean canPlace = hand.isEmpty() || hs.mayPlace(hand);
+                if (canPickup && canPickupHotbar && canPlace) {
+                    performPickupExchange(mc, screen, hs, sel);
+                    playSwapSound(mc);
+                    SwapKeyState.closePendingTicks = closeDelay;
+                    SwapLog.debug("performSwap: PICKUP direct for held slot in backpack screen, hoverIdx={} sel={}",
+                            hs.index, sel);
+                    return true;
+                }
+            }
+            // Fallback to SWAP if PICKUP guards fail
+        }
+
         if (swapSingleSlot(mc, screen, hs, sel, false)) {
-            verifyHoverIdx = hs.index;
-            verifySelIdx = sel;
-            verifyPreHovered = hs.getItem().copy();
-            verifyPreHotbar = mc.player.getInventory().getItem(sel).copy();
+            // Record for verification
+            verifySlotIdx[0] = hs.index;
+            verifyHotbarIdx[0] = sel;
+            verifyPreSlot[0] = preSlot;
+            verifyPreHotbar[0] = preHotbar;
+            verifyActive[0] = true;
+            verifyCount = 1;
+            verifyContainerId = screen.getMenu().containerId;
             swapVerifyTicks = 2;
             playSwapSound(mc);
             SwapKeyState.closePendingTicks = closeDelay;
@@ -300,7 +330,7 @@ public class InstantSwapClient {
         if (isPlayerInventorySlot(hs) && hs.getContainerSlot() == hotbarIdx) return false;
         if (!hs.hasItem() && hotbarStack.isEmpty()) return false;
 
-        Slot hotbarMenuSlot = findMenuSlot(screen, mc.player.getInventory(), hotbarIdx);
+        Slot hotbarMenuSlot = findHotbarMenuSlot(screen, hotbarIdx);
         if (hotbarMenuSlot != null && hotbarMenuSlot.hasItem()
                 && !hotbarMenuSlot.mayPickup(mc.player)) {
             if (!suppressToast) SwapToast.warn("toast.susinstantswap.item_in_use");
@@ -321,80 +351,79 @@ public class InstantSwapClient {
         return containerSwap(screen, hs.index, hotbarIdx);
     }
 
-    private static void verifySwapResult(Minecraft mc, AbstractContainerScreen<?> screen) {
-        if (verifyHoverIdx < 0 || verifyHoverIdx >= screen.getMenu().slots.size()) return;
-
-        Slot hs = screen.getMenu().getSlot(verifyHoverIdx);
-        ItemStack postHovered = hs.getItem();
-        ItemStack postHotbar = mc.player.getInventory().getItem(verifySelIdx);
-        ItemStack hotbarItem = postHotbar;
-
-        boolean hoveredChanged = !ItemStack.matches(postHovered, verifyPreHovered);
-        boolean hotbarChanged = !ItemStack.matches(postHotbar, verifyPreHotbar);
-        boolean swapSucceeded = hoveredChanged || hotbarChanged;
-
-        if (swapSucceeded) return;
-
-        SwapLog.debug("SWAP verify: FAILED screen={} hoverIdx={} sel={} hoverHasItem={} hotbarHasItem={} hoverMayPickup={} isPlayerInv={}",
-                screen.getClass().getSimpleName(), verifyHoverIdx, verifySelIdx,
-                hs.hasItem(), !hotbarItem.isEmpty(),
-                hs.hasItem() ? hs.mayPickup(mc.player) : "n/a", isPlayerInventorySlot(hs));
-
-        if (mc.gameMode == null) return;
-
+    /**
+     * Synchronous PICKUP exchange — 2 or 3 steps all in the same tick.
+     * - TAKE (target has item, hotbar empty):   PICKUP target → PICKUP hotbar (2 steps)
+     * - PUT  (target empty, hotbar has item):    PICKUP hotbar → PICKUP target (2 steps)
+     * - EXCHANGE (both have items):              PICKUP target → PICKUP hotbar → PICKUP target (3 steps)
+     */
+    private static void performPickupExchange(Minecraft mc, AbstractContainerScreen<?> screen,
+                                               Slot containerSlot, int hotbarIdx) {
         int cid = screen.getMenu().containerId;
-        Slot hotbarSlot = findMenuSlot(screen, mc.player.getInventory(), verifySelIdx);
+        Slot hotbarMenuSlot = findHotbarMenuSlot(screen, hotbarIdx);
+        if (hotbarMenuSlot == null) return;
 
-        // Case 1: TAKE — hovered has item, hotbar empty
-        if (hs.hasItem() && hotbarItem.isEmpty()) {
-            if (hotbarSlot != null) {
-                // Two-step PICKUP: pick up from hovered, place in hotbar
-                mc.gameMode.handleInventoryMouseClick(cid, hs.index, 0, ClickType.PICKUP, mc.player);
-                mc.gameMode.handleInventoryMouseClick(cid, hotbarSlot.index, 0, ClickType.PICKUP, mc.player);
-                SwapLog.debug("  retry TAKE: PICKUP hoverIdx={} → hotbarIdx={}", hs.index, hotbarSlot.index);
-            } else {
-                // Fallback: QUICK_MOVE (may go to wrong hotbar slot)
-                mc.gameMode.handleInventoryMouseClick(cid, hs.index, 0, ClickType.QUICK_MOVE, mc.player);
-                SwapLog.debug("  retry TAKE: QUICK_MOVE hoverIdx={} (no hotbar slot found)", hs.index);
-            }
-            SwapKeyState.closePendingTicks = Math.max(SwapKeyState.closePendingTicks, 3);
-            return;
+        boolean containerHasItem = containerSlot.hasItem();
+        boolean hotbarHasItem = hotbarMenuSlot.hasItem();
+
+        if (containerHasItem && !hotbarHasItem) {
+            // TAKE: 2 steps
+            mc.gameMode.handleInventoryMouseClick(cid, containerSlot.index, 0, ClickType.PICKUP, mc.player);
+            mc.gameMode.handleInventoryMouseClick(cid, hotbarMenuSlot.index, 0, ClickType.PICKUP, mc.player);
+        } else if (!containerHasItem && hotbarHasItem) {
+            // PUT: 2 steps
+            mc.gameMode.handleInventoryMouseClick(cid, hotbarMenuSlot.index, 0, ClickType.PICKUP, mc.player);
+            mc.gameMode.handleInventoryMouseClick(cid, containerSlot.index, 0, ClickType.PICKUP, mc.player);
+        } else if (containerHasItem && hotbarHasItem) {
+            // EXCHANGE: 3 steps
+            mc.gameMode.handleInventoryMouseClick(cid, containerSlot.index, 0, ClickType.PICKUP, mc.player);
+            mc.gameMode.handleInventoryMouseClick(cid, hotbarMenuSlot.index, 0, ClickType.PICKUP, mc.player);
+            mc.gameMode.handleInventoryMouseClick(cid, containerSlot.index, 0, ClickType.PICKUP, mc.player);
         }
+    }
 
-        // Case 2: EXCHANGE — both have items → three-step PICKUP
-        if (hs.hasItem() && !hotbarItem.isEmpty()) {
-            if (hotbarSlot != null) {
-                // Step 1: PICKUP hovered → cursor holds hovered item
-                mc.gameMode.handleInventoryMouseClick(cid, hs.index, 0, ClickType.PICKUP, mc.player);
-                // Step 2: PICKUP hotbar → cursor holds hotbar item, hovered item goes to hotbar
-                mc.gameMode.handleInventoryMouseClick(cid, hotbarSlot.index, 0, ClickType.PICKUP, mc.player);
-                // Step 3: PICKUP target → places hotbar item in hovered slot
-                mc.gameMode.handleInventoryMouseClick(cid, hs.index, 0, ClickType.PICKUP, mc.player);
-                SwapLog.debug("  retry EXCHANGE: 3-step PICKUP hoverIdx={} ↔ hotbarIdx={}", hs.index, hotbarSlot.index);
-            }
-            SwapKeyState.closePendingTicks = Math.max(SwapKeyState.closePendingTicks, 3);
-            return;
-        }
+    private static void verifySwapResult(Minecraft mc, AbstractContainerScreen<?> screen) {
+        if (screen.getMenu().containerId != verifyContainerId) return;
 
-        // Case 3: PUT — hovered empty, hotbar has item → two-step PICKUP
-        if (!hs.hasItem() && !hotbarItem.isEmpty()) {
-            if (hotbarSlot != null) {
-                // Step 1: PICKUP hotbar → cursor holds hotbar item
-                mc.gameMode.handleInventoryMouseClick(cid, hotbarSlot.index, 0, ClickType.PICKUP, mc.player);
-                // Step 2: PICKUP hovered → places item in target slot
-                mc.gameMode.handleInventoryMouseClick(cid, hs.index, 0, ClickType.PICKUP, mc.player);
-                SwapLog.debug("  retry PUT: PICKUP hotbarIdx={} → hoverIdx={}", hotbarSlot.index, hs.index);
+        for (int i = 0; i < verifyCount; i++) {
+            if (!verifyActive[i]) continue;
+            if (verifySlotIdx[i] < 0 || verifySlotIdx[i] >= screen.getMenu().slots.size()) continue;
+
+            Slot hs = screen.getMenu().getSlot(verifySlotIdx[i]);
+            ItemStack postSlot = hs.getItem();
+            ItemStack postHotbar = mc.player.getInventory().getItem(verifyHotbarIdx[i]);
+
+            boolean slotChanged = !ItemStack.matches(postSlot, verifyPreSlot[i]);
+            boolean hotbarChanged = !ItemStack.matches(postHotbar, verifyPreHotbar[i]);
+            boolean swapSucceeded = slotChanged || hotbarChanged;
+
+            if (swapSucceeded) {
+                SwapLog.debug("SWAP verify: OK col={} slotChanged={} hotbarChanged={}",
+                        i, slotChanged, hotbarChanged);
+                continue;
             }
-            SwapKeyState.closePendingTicks = Math.max(SwapKeyState.closePendingTicks, 3);
-            return;
+
+            // SWAP failed — use PICKUP fallback
+            SwapLog.debug("SWAP verify: FAILED col={} hoverIdx={} sel={}", i, verifySlotIdx[i], verifyHotbarIdx[i]);
+
+            if (mc.gameMode == null) return;
+
+            // Perform PICKUP exchange for this column
+            Slot hotbarSlot = findHotbarMenuSlot(screen, verifyHotbarIdx[i]);
+
+            if (hotbarSlot != null) {
+                performPickupExchange(mc, screen, hs, verifyHotbarIdx[i]);
+                SwapLog.debug("  PICKUP fallback for col={}", i);
+            }
+
+            SwapKeyState.closePendingTicks = Math.max(SwapKeyState.closePendingTicks, 2);
         }
     }
 
     private static boolean containerSwap(AbstractContainerScreen<?> s, int slotIdx, int hotbar) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.getConnection() == null) return false;
+        if (mc.gameMode == null) return false;
 
-        Int2ObjectOpenHashMap<ItemStack> cs = new Int2ObjectOpenHashMap<>();
         Slot slot = s.getMenu().getSlot(slotIdx);
         if (slot != null && slot.container == mc.player.getInventory()
                 && slot.getContainerSlot() == hotbar) return false;
@@ -403,20 +432,32 @@ public class InstantSwapClient {
         if (slot != null && slot.hasItem() && !slot.mayPickup(mc.player)
                 && slot.container == mc.player.getInventory()) return false;
 
-        Slot hSlot = findMenuSlot(s, mc.player.getInventory(), hotbar);
+        Slot hSlot = findHotbarMenuSlot(s, hotbar);
         if (hSlot != null && hSlot.hasItem() && !hSlot.mayPickup(mc.player)) return false;
 
-        mc.getConnection().send(new ServerboundContainerClickPacket(
-                s.getMenu().containerId, s.getMenu().getStateId(), slotIdx, hotbar,
-                ClickType.SWAP, ItemStack.EMPTY, cs));
+        // Use handleInventoryMouseClick instead of manual packet construction
+        // → automatically calls menu.clicked() + sends correct changedSlots/carriedItem/stateId
+        mc.gameMode.handleInventoryMouseClick(
+                s.getMenu().containerId, slotIdx, hotbar, ClickType.SWAP, mc.player);
         return true;
     }
 
+    /** Swap an entire inventory row (9 slots) with the hotbar. */
     private static boolean performRowSwap(Minecraft mc, AbstractContainerScreen<?> screen) {
         int row = RowArrowWidget.hoveredRow;
+        int sel = mc.player.getInventory().selected;
+
+        SwapLog.debug("performRowSwap ENTER: row={} creative={} sel={}", row, mc.player.isCreative(), sel);
+
+        // ── Creative mode: use handleCreativeModeItemAdd (SWAP packets don't
+        //    work because CreativeModeInventoryMenu is client-side only) ──
+        if (screen instanceof CreativeModeInventoryScreen cs) {
+            return creativeRowSwap(mc, cs, row, sel);
+        }
+
         boolean anySwap = false;
-        Slot selSlot = null;
-        int selHotbar = mc.player.getInventory().selected;
+        verifyCount = 0;
+        verifyContainerId = screen.getMenu().containerId;
 
         for (int col = 0; col < 9; col++) {
             int slotIdx = RowArrowWidget.rowSlotIndex(row, col);
@@ -425,23 +466,96 @@ public class InstantSwapClient {
 
             if (s.container != mc.player.getInventory() && !isBackpackScreen(screen)) continue;
 
+            // Capture pre-swap state BEFORE swapSingleSlot (which calls
+            // handleInventoryMouseClick → menu.clicked() updates local state)
+            ItemStack preSlot = s.getItem().copy();
+            ItemStack preHotbar = mc.player.getInventory().getItem(col).copy();
+
+            // ── For the selected/held hotbar slot, use PICKUP directly ──
+            //    Reason: many backpack mods (Traveller's Backpack, etc.) block
+            //    SWAP when the target hotbar slot == inventory.selected.
+            //    Using PICKUP avoids the 2-tick verify delay for that column.
+            if (col == sel) {
+                Slot hotbarSlot = findHotbarMenuSlot(screen, col);
+                if (hotbarSlot != null && (s.hasItem() || hotbarSlot.hasItem())
+                        && s.mayPickup(mc.player) && (hotbarSlot.hasItem() ? hotbarSlot.mayPickup(mc.player) : true)) {
+                    ItemStack hand = mc.player.getInventory().getItem(col);
+                    if (hand.isEmpty() || s.mayPlace(hand)) {
+                        performPickupExchange(mc, screen, s, col);
+                        anySwap = true;
+                    }
+                }
+                continue;
+            }
+
             if (swapSingleSlot(mc, screen, s, col, true)) {
                 anySwap = true;
-                if (col == selHotbar) selSlot = s;
+                if (verifyCount < MAX_VERIFY) {
+                    int vi = verifyCount;
+                    verifySlotIdx[vi] = s.index;
+                    verifyHotbarIdx[vi] = col;
+                    verifyPreSlot[vi] = preSlot;
+                    verifyPreHotbar[vi] = preHotbar;
+                    verifyActive[vi] = true;
+                    verifyCount++;
+                }
             }
         }
 
-        if (selSlot != null) {
-            verifyHoverIdx = selSlot.index;
-            verifySelIdx = selHotbar;
-            verifyPreHovered = selSlot.getItem().copy();
-            verifyPreHotbar = mc.player.getInventory().getItem(selHotbar).copy();
-            swapVerifyTicks = 2;
+        SwapLog.debug("performRowSwap EXIT: anySwap={} verifyCount={}", anySwap, verifyCount);
+
+        if (anySwap) {
+            if (verifyCount > 0) swapVerifyTicks = 2;
+            playSwapSound(mc);
+            SwapKeyState.closePendingTicks = isVanillaInventory(screen) ? 1 : 2;
+        }
+        return anySwap;
+    }
+
+    /**
+     * Creative-mode row swap using handleCreativeModeItemAdd.
+     * CreativeModeInventoryMenu is client-side only; SWAP packets sent via
+     * handleInventoryMouseClick are processed against the server's
+     * InventoryMenu (different slot layout), so they silently fail.
+     * Instead, we directly swap inventory.Items and sync each change
+     * via handleCreativeModeItemAdd — the same pattern used by
+     * creativeSwap() for single-slot swaps.
+     */
+    private static boolean creativeRowSwap(Minecraft mc, CreativeModeInventoryScreen cs,
+                                           int row, int sel) {
+        int menuHotbarStart = 36;
+        boolean anySwap = false;
+
+        for (int col = 0; col < 9; col++) {
+            int slotIdx = RowArrowWidget.rowSlotIndex(row, col);
+            if (slotIdx < 0 || slotIdx >= cs.getMenu().slots.size()) continue;
+            Slot s = cs.getMenu().getSlot(slotIdx);
+            if (s == null) continue;
+            if (s.container != mc.player.getInventory()) continue;
+
+            int csi = s.getContainerSlot();
+            if (csi == col) continue; // self-swap guard
+
+            ItemStack invItem = s.getItem().copy();
+            ItemStack hotbarItem = mc.player.getInventory().getItem(col).copy();
+
+            if (invItem.isEmpty() && hotbarItem.isEmpty()) continue;
+
+            // Swap: hotbar slot ← inventory item
+            safeSet(mc, col, invItem);
+            mc.gameMode.handleCreativeModeItemAdd(invItem, menuHotbarStart + col);
+
+            // Swap: inventory slot ← hotbar item
+            int invIdx = csi >= menuHotbarStart ? csi - menuHotbarStart : csi;
+            safeSet(mc, invIdx, hotbarItem);
+            mc.gameMode.handleCreativeModeItemAdd(hotbarItem, csi);
+
+            anySwap = true;
         }
 
         if (anySwap) {
             playSwapSound(mc);
-            SwapKeyState.closePendingTicks = isVanillaInventory(screen) ? 1 : 2;
+            SwapKeyState.closePendingTicks = 1;
         }
         return anySwap;
     }
@@ -535,42 +649,52 @@ public class InstantSwapClient {
         return slot.container == Minecraft.getInstance().player.getInventory();
     }
 
+    /** Standard findMenuSlot — matches by container + containerSlot. */
     private static Slot findMenuSlot(AbstractContainerScreen<?> screen, Inventory inv, int containerSlot) {
         for (Slot slot : screen.getMenu().slots)
             if (slot.container == inv && slot.getContainerSlot() == containerSlot) return slot;
         return null;
     }
 
+    /**
+     * Find hotbar menu slot with fallback for backpack mods.
+     * Standard: container == playerInv && containerSlot == hotbarIdx.
+     * Fallback (for backpack mods that wrap slots): getContainerSlot() == hotbarIdx.
+     */
+    private static Slot findHotbarMenuSlot(AbstractContainerScreen<?> screen, int hotbarIdx) {
+        // Standard lookup first
+        Slot s = findMenuSlot(screen, mc().player.getInventory(), hotbarIdx);
+        if (s != null) return s;
+        // Fallback: match by getContainerSlot() only (for wrapped slots)
+        for (Slot slot : screen.getMenu().slots)
+            if (slot.getContainerSlot() == hotbarIdx) return slot;
+        return null;
+    }
+
+    private static Minecraft mc() { return Minecraft.getInstance(); }
+
     private static boolean isVanillaInventory(AbstractContainerScreen<?> screen) {
         return screen instanceof InventoryScreen || screen instanceof CreativeModeInventoryScreen;
     }
 
     private static boolean isBackpackScreen(Screen screen) {
-        if (!(screen instanceof AbstractContainerScreen<?> s)) return false;
-        String name = s.getClass().getName();
-        return name.contains("sophisticated") || name.contains("flanks255")
-            || name.contains("BackpackScreen") || name.contains("omnis")
-            || name.contains("backpacked") || name.contains("inmis")
-            || name.contains("goodbackpacks") || name.contains("resource_backpacks")
-            || name.contains("ironbackpacks");
+        return BackpackScreenMatcher.isBackpackScreen(screen);
     }
 
     private static int hotbarSize(Minecraft mc) {
         return mc.player.getInventory().items.size() - 27;
     }
 
-    private static boolean isContainerOpener(ItemStack hotbarStack, AbstractContainerMenu menu) {
+    private static boolean isContainerOpener(ItemStack hotbarStack, net.minecraft.world.inventory.AbstractContainerMenu menu) {
         if (hotbarStack.isEmpty()) return false;
         Minecraft mc = Minecraft.getInstance();
         var playerInv = mc.player.getInventory();
-        int idx = 0;
         for (Slot slot : menu.slots) {
-            if (slot.container == playerInv) { idx++; continue; }
-            if (!slot.hasItem()) { idx++; continue; }
+            if (slot.container == playerInv) continue;
+            if (!slot.hasItem()) continue;
             boolean locked = !slot.mayPickup(mc.player);
             boolean sameItem = slot.getItem().getItem() == hotbarStack.getItem();
             if (locked && sameItem) return true;
-            idx++;
         }
         return false;
     }
@@ -594,12 +718,9 @@ public class InstantSwapClient {
     }
 
     private static boolean isInventoryKeyPhysicallyDown(Minecraft mc) {
-        for (InputConstants.Key key : SwapKeyState.getTargetKeys()) {
-            if (key.getType() == InputConstants.Type.KEYSYM
-                    && GLFW.glfwGetKey(mc.getWindow().getWindow(), key.getValue()) == GLFW.GLFW_PRESS)
-                return true;
-        }
-        return false;
+        InputConstants.Key key = mc.options.keyInventory.getKey();
+        return key.getType() == InputConstants.Type.KEYSYM
+                && GLFW.glfwGetKey(mc.getWindow().getWindow(), key.getValue()) == GLFW.GLFW_PRESS;
     }
 
     private static boolean isInventoryKeyEvent(Minecraft mc, InputEvent.Key event) {

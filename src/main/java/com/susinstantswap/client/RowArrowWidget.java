@@ -6,6 +6,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.susinstantswap.SusInstantSwapMod;
+import com.susinstantswap.config.SwapConfig;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -22,8 +25,11 @@ public class RowArrowWidget {
 
     public static final int ROW_COUNT = 3;
 
-    private static final int TRIGGER_OVERLAP = 1;
-    private static final int TRIGGER_H       = 17;
+    private static final int TRIGGER_RIGHT_OFFSET = -1;
+    private static final int TRIGGER_RIGHT_W      = 8;
+    private static final int TRIGGER_LEFT_OFFSET  = -1;
+    private static final int TRIGGER_LEFT_W       = 8;
+    private static final int TRIGGER_H            = 17;
 
     private static final int GROOVE_W      = 1;
     private static final int GROOVE_HEIGHT = 14;
@@ -39,7 +45,7 @@ public class RowArrowWidget {
     private static final int[] rowSlotLeft   = new int[ROW_COUNT];
     private static final int[] rowSlotRight  = new int[ROW_COUNT];
     private static final int[][] rowSlots    = new int[ROW_COUNT][9];
-    private static int panelLeft, panelRight;
+    private static int panelLeft;
     private static boolean rowsDetected = false;
 
     public static void detectRows(AbstractContainerScreen<?> screen, LocalPlayer player) {
@@ -47,7 +53,6 @@ public class RowArrowWidget {
 
         panelLeft  = screen.getGuiLeft();
         int top    = screen.getGuiTop();
-        panelRight = panelLeft + screen.getXSize();
 
         // Standard detection: containerSlot [9,36) from player.getInventory()
         Map<Integer, Integer> slotToMenu = new HashMap<>();
@@ -65,7 +70,7 @@ public class RowArrowWidget {
 
         // Position-based fallback for backpack mods
         boolean positionBased = false;
-        if (byY.isEmpty() && needsPositionBasedRows(screen)) {
+        if (byY.isEmpty() && BackpackScreenMatcher.needsPositionBasedRows(screen)) {
             byY.clear();
             for (Slot slot : screen.getMenu().slots) {
                 byY.computeIfAbsent(slot.y, k -> new ArrayList<>()).add(slot);
@@ -114,37 +119,23 @@ public class RowArrowWidget {
         rowsDetected = (idx == ROW_COUNT);
     }
 
-    /** Screens known to use wrapper containers that hide player.getInventory(). */
-    private static boolean needsPositionBasedRows(AbstractContainerScreen<?> screen) {
-        String name = screen.getClass().getName();
-        return name.contains("sophisticated")        // Sophisticated Backpacks / Core
-            || name.contains("flanks255")             // Simply Backpacks (SBGui)
-            || name.contains("BackpackScreen")        // Traveller's Backpack
-            || name.contains("omnis")                 // Omnis Backpack
-            || name.contains("backpacked")            // Backpacked
-            || name.contains("inmis")                 // Inmis Backpack
-            || name.contains("goodbackpacks")         // Good Backpacks
-            || name.contains("resource_backpacks")    // Resource Backpacks
-            || name.contains("ironbackpacks");        // Iron Backpacks
-    }
-
     /** Menu slot index for a given row + column. */
     public static int rowSlotIndex(int row, int col) {
         return rowsDetected ? rowSlots[row][col] : 9 + row * 9 + col;
     }
 
     private static boolean isHoveringRight(int row, double mx, double my) {
-        int tx = rowSlotRight[row] - TRIGGER_OVERLAP;
+        int tx = rowSlotRight[row] + TRIGGER_RIGHT_OFFSET;
         int ty = rowY[row];
-        return mx >= tx && mx < panelRight + 2
+        return mx >= tx && mx < tx + TRIGGER_RIGHT_W
             && my >= ty && my < ty + TRIGGER_H;
     }
 
     private static boolean isHoveringLeft(int row, double mx, double my) {
-        int tx = panelLeft - 2;
-        int tw = rowSlotLeft[row] - panelLeft + 1;
+        int rx = rowSlotLeft[row] + TRIGGER_LEFT_OFFSET;
+        int lx = rx - TRIGGER_LEFT_W;
         int ty = rowY[row];
-        return mx >= tx && mx < tx + tw
+        return mx >= lx && mx < rx
             && my >= ty && my < ty + TRIGGER_H;
     }
 
@@ -161,9 +152,8 @@ public class RowArrowWidget {
         }
         if (hoveredRow >= 0 && prev != hoveredRow) {
             Minecraft mc = Minecraft.getInstance();
-            if (mc.player != null
-                    && com.susinstantswap.SusInstantSwapMod.CONFIG != null
-                    && com.susinstantswap.SusInstantSwapMod.CONFIG.soundEnabled.get()) {
+            SwapConfig cfg = SusInstantSwapMod.CONFIG;
+            if (mc.player != null && cfg != null && cfg.soundEnabled.get()) {
                 mc.player.playSound(SoundEvents.NOTE_BLOCK_HAT.value(), 0.3f, 1.8f);
             }
         }

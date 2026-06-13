@@ -22,9 +22,7 @@
   "config.susinstantswap.debug": "บันทึกดีบัก",
   "config.susinstantswap.debug.tooltip": "แสดงข้อมูลดีบักในบันทึกเกม",
   "toast.susinstantswap.empty_slot_swap_disabled": "การสลับช่องว่างถูกปิดใช้งาน ไม่สามารถสลับกับช่องว่างได้",
-  "toast.susinstantswap.both_slots_empty": "ทั้งสองช่องว่างเปล่า ไม่มีอะไรให้สลับ",
-  "toast.susinstantswap.not_player_inventory": "สามารถสลับได้เฉพาะไอเทมในกระเป๋าหรือฮอตบาร์เท่านั้น",
+  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "ไม่สามารถวางไอเทมในมือลงในช่องนี้ได้",
-  "toast.susinstantswap.armor_slot_mismatch": "ประเภทไอเทมไม่ตรงกับช่องอุปกรณ์",
-  "toast.susinstantswap.unknown_error": "เกิดข้อผิดพลาดที่ไม่รู้จัก การสลับล้มเหลว"
+  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
 }
