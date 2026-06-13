@@ -24,5 +24,6 @@
   "toast.susinstantswap.empty_slot_swap_disabled": "Byte av tomma platser är inaktiverat, kan inte byta med tom plats",
   "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "Föremålet i handen kan inte placeras på denna plats",
-  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
+  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now",
+  "toast.susinstantswap.slot_type_mismatch": "Target slot type mismatch"
 }

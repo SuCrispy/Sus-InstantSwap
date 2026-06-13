@@ -24,5 +24,6 @@
   "toast.susinstantswap.empty_slot_swap_disabled": "빈 슬롯 교환이 비활성화되었습니다",
   "toast.susinstantswap.item_in_use": "현재 아이템을 교환할 수 없습니다",
   "toast.susinstantswap.item_not_placeable": "아이템 유형이 일치하지 않습니다",
-  "toast.susinstantswap.slot_locked": "대상 슬롯을 현재 교환할 수 없습니다"
+  "toast.susinstantswap.slot_locked": "대상 슬롯을 현재 교환할 수 없습니다",
+  "toast.susinstantswap.slot_type_mismatch": "Target slot type mismatch"
 }

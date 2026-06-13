@@ -24,5 +24,6 @@
   "toast.susinstantswap.empty_slot_swap_disabled": "空スロット交換が無効です",
   "toast.susinstantswap.item_in_use": "現在のアイテムは交換できません",
   "toast.susinstantswap.item_not_placeable": "アイテムタイプが一致しません",
-  "toast.susinstantswap.slot_locked": "対象スロットは現在交換できません"
+  "toast.susinstantswap.slot_locked": "対象スロットは現在交換できません",
+  "toast.susinstantswap.slot_type_mismatch": "Target slot type mismatch"
 }

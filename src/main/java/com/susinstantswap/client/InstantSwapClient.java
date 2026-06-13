@@ -175,9 +175,10 @@ public class InstantSwapClient {
                 mc.player.closeContainer();
         }
 
-        // IDLE: wait for inventory key press
+        // IDLE: wait for inventory key press (only vanilla inventory key, not backpack keys)
         if (state == SwapState.IDLE) {
-            if (SwapKeyState.inventoryKeyHeld && mc.screen instanceof AbstractContainerScreen) {
+            if (SwapKeyState.inventoryKeyHeld && SwapKeyState.lastTriggerKeyIsVanilla
+                    && mc.screen instanceof AbstractContainerScreen) {
                 SwapKeyState.pressStartNanos = System.nanoTime();
                 positionCursorIfEnabled(mc, mc.screen);
                 state = SwapState.WATCHING;
@@ -273,8 +274,6 @@ public class InstantSwapClient {
             return false;
         }
 
-        if (screen instanceof InventoryScreen && !isPlayerInventorySlot(hs)) return false;
-
         // Capture pre-swap state BEFORE swapSingleSlot (which calls
         // handleInventoryMouseClick → menu.clicked() updates local state)
         ItemStack preSlot = hs.getItem().copy();
@@ -346,6 +345,19 @@ public class InstantSwapClient {
         if (hs.hasItem() && !hs.mayPickup(mc.player) && isPlayerInventorySlot(hs)) {
             if (!suppressToast) SwapToast.warn("toast.susinstantswap.slot_locked");
             return false;
+        }
+
+        // For non-player-inventory slots outside backpack screens (e.g., Curios accessories),
+        // validate mayPlace/mayPickup to reject incompatible slots early
+        if (!isPlayerInventorySlot(hs) && !isBackpackScreen(screen)) {
+            if (!hand.isEmpty() && !hs.mayPlace(hand)) {
+                if (!suppressToast) SwapToast.warn("toast.susinstantswap.slot_type_mismatch");
+                return false;
+            }
+            if (hs.hasItem() && !hs.mayPickup(mc.player)) {
+                if (!suppressToast) SwapToast.warn("toast.susinstantswap.slot_type_mismatch");
+                return false;
+            }
         }
 
         return containerSwap(screen, hs.index, hotbarIdx);

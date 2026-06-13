@@ -24,5 +24,6 @@
   "toast.susinstantswap.empty_slot_swap_disabled": "Troca de espaços vazios desativada, não é possível trocar com espaço vazio",
   "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "O item na mão não pode ser colocado neste espaço",
-  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
+  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now",
+  "toast.susinstantswap.slot_type_mismatch": "Target slot type mismatch"
 }
