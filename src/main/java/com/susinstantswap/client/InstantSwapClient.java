@@ -179,10 +179,12 @@ public class InstantSwapClient {
         }
 
         // IDLE: wait for target key press with a container screen open.
-        // State machine always engages so long-press can be detected even
-        // when the key press itself opened the screen.
+        // Only engage when the key press OPENED the screen
+        // (screenWasOpenAtPressStart=false). When screen was already open,
+        // vanilla handles E-to-close without state machine intervention.
         if (state == SwapState.IDLE) {
-            if (SwapKeyState.inventoryKeyHeld && mc.screen instanceof AbstractContainerScreen) {
+            if (SwapKeyState.inventoryKeyHeld && !SwapKeyState.screenWasOpenAtPressStart
+                    && mc.screen instanceof AbstractContainerScreen) {
                 if (!cursorRepositionedThisPress) {
                     positionCursorIfEnabled(mc, mc.screen);
                     cursorRepositionedThisPress = true;
@@ -196,14 +198,8 @@ public class InstantSwapClient {
         if (state == SwapState.WATCHING) {
             if (mc.screen == null) { state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
             if (!isAnyTargetKeyPhysicallyDown(mc)) {
-                // Short press released before threshold
-                if (SwapKeyState.screenWasOpenAtPressStart) {
-                    // Screen was already open → close (vanilla E behavior)
-                    if (SwapKeyState.closePendingTicks <= 0) {
-                        mc.player.closeContainer();
-                    }
-                }
-                // else: key press opened the screen → keep it open
+                // Short press released before threshold — keep screen open
+                // (the key press opened this screen, short press = just open UI)
                 state = SwapState.IDLE;
                 cursorRepositionedThisPress = false;
                 return;
