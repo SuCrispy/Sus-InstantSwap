@@ -40,13 +40,19 @@ public class InstantSwapClient {
     private static boolean configLogged = false;
     /** Guard: only reposition cursor once per IDLE→WATCHING transition. */
     private static boolean cursorRepositionedThisPress = false;
+    /**
+     * When GUI swap key == inventory key (E), and the last FRESH E press
+     * in a screen attempted a swap that failed, the next E press should
+     * fall through to vanilla close (so user isn't stuck with screen open).
+     */
+    private static boolean lastGuiSwapAttemptFailed = false;
 
     public static void init(SwapConfig cfg) {
         config = cfg;
         SwapLog.init(config);
         SwapToast.init(config);
         SWAP_IN_GUI_KEY = new KeyMapping("key.susinstantswap.swap_in_gui",
-                InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(),
+                InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT,
                 "key.categories.susinstantswap");
         NeoForge.EVENT_BUS.register(InstantSwapClient.class);
     }
@@ -248,19 +254,27 @@ public class InstantSwapClient {
         }
 
         if (keyDown && config.guiSwapEnabled.get()) {
-            if ((isGuiSwapKey || (isInventoryKey && SWAP_IN_GUI_KEY.isUnbound()))
-                    && mc.screen instanceof AbstractContainerScreen) {
+            if (isGuiSwapKey && mc.screen instanceof AbstractContainerScreen) {
                 performSwap(mc);
             }
         }
     }
 
+    /** Try GUI swap when the GUI swap key is pressed (called from ScreenKeyMixin). */
     public static boolean tryPerformGuiSwap(AbstractContainerScreen<?> screen) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.gameMode == null) return false;
-        if (!config.guiSwapEnabled.get() || !SWAP_IN_GUI_KEY.isUnbound()) return false;
-        return performSwap(mc);
+        if (!config.guiSwapEnabled.get() || SWAP_IN_GUI_KEY.isUnbound()) return false;
+        boolean result = performSwap(mc);
+        lastGuiSwapAttemptFailed = !result;
+        return result;
     }
+
+    /** Check if the last GUI swap attempt failed (for ScreenKeyMixin to decide fallback). */
+    public static boolean wasLastGuiSwapFailed() { return lastGuiSwapAttemptFailed; }
+
+    /** Reset the failed flag (called by ScreenKeyMixin when letting vanilla close). */
+    public static void resetGuiSwapFailed() { lastGuiSwapAttemptFailed = false; }
 
     // ── Unified swap ──
 
@@ -727,6 +741,16 @@ public class InstantSwapClient {
         if (mc == null || mc.options == null) return false;
         InputConstants.Key invKey = mc.options.keyInventory.getKey();
         return invKey.getType() == key.getType() && invKey.getValue() == key.getValue();
+    }
+
+    /** Returns the current GUI swap key binding, or null if not initialized. */
+    public static InputConstants.Key getGuiSwapKey() {
+        return SWAP_IN_GUI_KEY != null ? SWAP_IN_GUI_KEY.getKey() : null;
+    }
+
+    /** Returns true if the GUI swap key is unbound (no key assigned). */
+    public static boolean isGuiSwapKeyUnbound() {
+        return SWAP_IN_GUI_KEY == null || SWAP_IN_GUI_KEY.isUnbound();
     }
 
     private static boolean isInventoryKeyPhysicallyDown(Minecraft mc) {

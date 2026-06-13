@@ -1,6 +1,7 @@
 package com.susinstantswap.mixin;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import com.susinstantswap.client.InstantSwapClient;
 import com.susinstantswap.client.SwapKeyState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -10,15 +11,19 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Intercepts Screen.keyPressed() for the inventory key REPEAT events
- * on any AbstractContainerScreen.
+ * Intercepts Screen.keyPressed() for the inventory key on
+ * AbstractContainerScreen.
  *
- * <p>When the inventory key was held BEFORE the screen opened (i.e., the
- * key press opened the screen and the user is still holding it), we block
- * the vanilla close-on-E to prevent flicker during long-press detection.</p>
- *
- * <p>When the screen was already open and the user presses E fresh,
- * we do NOT intercept — vanilla closes the screen normally.</p>
+ * <p>Three cases:</p>
+ * <ol>
+ *   <li><b>REPEAT</b> (inventoryKeyHeld=true): block close to prevent
+ *       flicker during long-press detection.</li>
+ *   <li><b>FRESH press, GUI swap key == inventory key (E)</b>: block
+ *       close and try GUI swap. If swap succeeds, screen closes after
+ *       swap. If swap fails, let vanilla close the screen.</li>
+ *   <li><b>FRESH press, GUI swap key ≠ inventory key</b>: don't
+ *       intercept — vanilla closes the screen normally.</li>
+ * </ol>
  */
 @Mixin(value = AbstractContainerScreen.class, remap = false)
 public class ScreenKeyMixin {
@@ -35,11 +40,28 @@ public class ScreenKeyMixin {
         if (pressed.getType() != invKey.getType() || pressed.getValue() != invKey.getValue()) return;
 
         if (SwapKeyState.inventoryKeyHeld) {
-            // REPEAT — key was held since before the screen opened.
-            // Block close to prevent flicker during long-press detection.
+            // REPEAT — block close to prevent flicker during long-press detection
             cir.setReturnValue(false);
+            return;
         }
-        // FRESH press while screen is already open → don't intercept,
+
+        // FRESH press — check if GUI swap key is bound to the same key as inventory
+        InputConstants.Key guiSwapKey = InstantSwapClient.getGuiSwapKey();
+        if (guiSwapKey != null && !InstantSwapClient.isGuiSwapKeyUnbound()
+                && guiSwapKey.getType() == invKey.getType()
+                && guiSwapKey.getValue() == invKey.getValue()) {
+            // If the last swap attempt failed, let vanilla close the screen
+            // (prevents user being stuck: swap fails → press E again → close)
+            if (InstantSwapClient.wasLastGuiSwapFailed()) {
+                InstantSwapClient.resetGuiSwapFailed();
+                // Don't intercept → vanilla closes the screen
+                return;
+            }
+            // GUI swap key == inventory key → block close and try swap first
+            cir.setReturnValue(false);
+            InstantSwapClient.tryPerformGuiSwap((AbstractContainerScreen<?>) (Object) this);
+        }
+        // else: GUI swap key is different or unbound → don't intercept,
         // let vanilla close the screen (normal E-to-close behavior).
     }
 }
