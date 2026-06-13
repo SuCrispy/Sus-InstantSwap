@@ -17,15 +17,12 @@
   "config.susinstantswap.emptySlotSwapEnabled.tooltip": "Also perform the swap on empty slots.",
   "config.susinstantswap.rowSwapEnabled": "Row Swap Arrows",
   "config.susinstantswap.rowSwapEnabled.tooltip": "Show arrow icons next to survival inventory rows. Hover and hold E to swap the entire row with your hotbar.",
-  "config.susinstantswap.toastEnabled": "Toast Messages",
-  "config.susinstantswap.toastEnabled.tooltip": "Show action bar messages for warnings, errors, and info.",
+  "config.susinstantswap.toastEnabled": "In-Game Notifications",
+  "config.susinstantswap.toastEnabled.tooltip": "Show floating text hints when swaps fail.",
   "config.susinstantswap.debug": "Debug Logging",
   "config.susinstantswap.debug.tooltip": "Output debug messages to the game log.",
-
-  "toast.susinstantswap.empty_slot_swap_disabled": "Empty slot swap is disabled, cannot swap with empty slot",
-  "toast.susinstantswap.both_slots_empty": "Both slots are empty, nothing to swap",
-  "toast.susinstantswap.not_player_inventory": "Can only swap items in backpack or hotbar",
-  "toast.susinstantswap.item_not_placeable": "The item in hand cannot be placed in this slot",
-  "toast.susinstantswap.armor_slot_mismatch": "Item type does not match the equipment slot",
-  "toast.susinstantswap.unknown_error": "An unknown error occurred, swap failed"
+  "toast.susinstantswap.empty_slot_swap_disabled": "Empty slot swap is not enabled",
+  "toast.susinstantswap.item_not_placeable": "Item type mismatch",
+  "toast.susinstantswap.slot_locked": "Target item currently cannot be swapped",
+  "toast.susinstantswap.item_in_use": "Held item currently cannot be swapped"
 }

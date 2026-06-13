@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.susinstantswap.SwapLog;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -39,7 +38,6 @@ public class RowArrowWidget {
     private static final int[] rowY          = new int[ROW_COUNT];
     private static final int[] rowSlotLeft   = new int[ROW_COUNT];
     private static final int[] rowSlotRight  = new int[ROW_COUNT];
-    /** Menu slot indices for each row, sorted left→right (col 0..8). */
     private static final int[][] rowSlots    = new int[ROW_COUNT][9];
     private static int panelLeft, panelRight;
     private static boolean rowsDetected = false;
@@ -51,7 +49,7 @@ public class RowArrowWidget {
         int top    = screen.getGuiTop();
         panelRight = panelLeft + screen.getXSize();
 
-        // containerSlot (9-35) → menu index map (built while iterating menu)
+        // Standard detection: containerSlot [9,36) from player.getInventory()
         Map<Integer, Integer> slotToMenu = new HashMap<>();
         Map<Integer, List<Slot>> byY = new LinkedHashMap<>();
         int menuIdx = 0;
@@ -65,20 +63,48 @@ public class RowArrowWidget {
             menuIdx++;
         }
 
+        // Position-based fallback for backpack mods
+        boolean positionBased = false;
+        if (byY.isEmpty() && needsPositionBasedRows(screen)) {
+            byY.clear();
+            for (Slot slot : screen.getMenu().slots) {
+                byY.computeIfAbsent(slot.y, k -> new ArrayList<>()).add(slot);
+            }
+            List<List<Slot>> qualifying = new ArrayList<>();
+            for (List<Slot> row : byY.values()) {
+                if (row.size() == 9) qualifying.add(row);
+            }
+            qualifying.sort((a, b) -> Integer.compare(b.get(0).y, a.get(0).y));
+            byY.clear();
+            int start = qualifying.size() > ROW_COUNT ? 1 : 0;
+            int end = Math.min(start + ROW_COUNT, qualifying.size());
+            for (int i = start; i < end; i++) {
+                List<Slot> row = qualifying.get(i);
+                byY.put(row.get(0).y, row);
+            }
+            positionBased = true;
+        }
+
         int idx = 0;
         for (List<Slot> row : byY.values()) {
             if (row.size() != 9 || idx >= ROW_COUNT) continue;
 
-            // Sort by containerSlot so col 0 = leftmost column
             row.sort((a, b) -> Integer.compare(a.getContainerSlot(), b.getContainerSlot()));
 
             int minX = Integer.MAX_VALUE, maxX = 0;
+            boolean rowValid = true;
             for (int c = 0; c < 9; c++) {
                 Slot s = row.get(c);
                 if (s.x < minX) minX = s.x;
                 if (s.x > maxX) maxX = s.x;
-                rowSlots[idx][c] = slotToMenu.get(s.getContainerSlot());
+                Integer menuI = slotToMenu.get(s.getContainerSlot());
+                if (menuI == null) {
+                    menuI = positionBased ? s.index : null;
+                }
+                if (menuI == null) { rowValid = false; break; }
+                rowSlots[idx][c] = menuI;
             }
+            if (!rowValid) continue;
 
             rowY[idx]          = top + row.get(0).y;
             rowSlotLeft[idx]   = panelLeft + minX;
@@ -86,17 +112,20 @@ public class RowArrowWidget {
             idx++;
         }
         rowsDetected = (idx == ROW_COUNT);
-        if (SwapLog.shouldDebug()) {
-            SwapLog.debug("detectRows: found={}/{} screen={} left={} top={}",
-                    idx, ROW_COUNT, screen.getClass().getSimpleName(), panelLeft, top);
-            for (int i = 0; i < idx; i++) {
-                SwapLog.debug("  row[{}]: y={} slotL={} slotR={} slots=[{},{},{},{},{},{},{},{},{}]",
-                        i, rowY[i], rowSlotLeft[i], rowSlotRight[i],
-                        rowSlots[i][0], rowSlots[i][1], rowSlots[i][2],
-                        rowSlots[i][3], rowSlots[i][4], rowSlots[i][5],
-                        rowSlots[i][6], rowSlots[i][7], rowSlots[i][8]);
-            }
-        }
+    }
+
+    /** Screens known to use wrapper containers that hide player.getInventory(). */
+    private static boolean needsPositionBasedRows(AbstractContainerScreen<?> screen) {
+        String name = screen.getClass().getName();
+        return name.contains("sophisticated")        // Sophisticated Backpacks / Core
+            || name.contains("flanks255")             // Simply Backpacks (SBGui)
+            || name.contains("BackpackScreen")        // Traveller's Backpack
+            || name.contains("omnis")                 // Omnis Backpack
+            || name.contains("backpacked")            // Backpacked
+            || name.contains("inmis")                 // Inmis Backpack
+            || name.contains("goodbackpacks")         // Good Backpacks
+            || name.contains("resource_backpacks")    // Resource Backpacks
+            || name.contains("ironbackpacks");        // Iron Backpacks
     }
 
     /** Menu slot index for a given row + column. */
@@ -122,18 +151,13 @@ public class RowArrowWidget {
     public static void checkHover(double mouseX, double mouseY) {
         int prev = hoveredRow;
         hoveredRow = -1;
-        if (!visible || !rowsDetected) {
-            return;
-        }
+        if (!visible || !rowsDetected) return;
         for (int r = 0; r < ROW_COUNT; r++) {
             if (isHoveringLeft(r, mouseX, mouseY)
                     || isHoveringRight(r, mouseX, mouseY)) {
                 hoveredRow = r;
                 break;
             }
-        }
-        if (hoveredRow != prev && SwapLog.shouldDebug()) {
-            SwapLog.debug("hover: {}→{}", prev, hoveredRow);
         }
         if (hoveredRow >= 0 && prev != hoveredRow) {
             Minecraft mc = Minecraft.getInstance();
@@ -147,15 +171,12 @@ public class RowArrowWidget {
 
     public static void render(Minecraft mc, GuiGraphics g) {
         if (!visible || !rowsDetected) return;
-
         for (int r = 0; r < ROW_COUNT; r++) {
             boolean hovered = (hoveredRow == r);
             int color = hovered ? GROOVE_HOVERED : GROOVE_DEFAULT;
             int gy = rowY[r] + GROOVE_Y_OFF;
-
             g.fill(rowSlotRight[r], gy,
                    rowSlotRight[r] + GROOVE_W, gy + GROOVE_HEIGHT, color);
-
             int lx = rowSlotLeft[r] - 3;
             g.fill(lx, gy, lx + GROOVE_W, gy + GROOVE_HEIGHT, color);
         }
