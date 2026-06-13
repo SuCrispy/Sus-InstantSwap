@@ -38,6 +38,8 @@ public class InstantSwapClient {
     private static SwapState state = SwapState.IDLE;
 
     private static boolean configLogged = false;
+    /** Guard: only reposition cursor once per IDLE→WATCHING transition. */
+    private static boolean cursorRepositionedThisPress = false;
 
     public static void init(SwapConfig cfg) {
         config = cfg;
@@ -175,12 +177,14 @@ public class InstantSwapClient {
                 mc.player.closeContainer();
         }
 
-        // IDLE: wait for inventory key press (only vanilla inventory key, not backpack keys)
+        // IDLE: wait for any target key press (inventory key or backpack key)
         if (state == SwapState.IDLE) {
-            if (SwapKeyState.inventoryKeyHeld && SwapKeyState.lastTriggerKeyIsVanilla
-                    && mc.screen instanceof AbstractContainerScreen) {
+            if (SwapKeyState.inventoryKeyHeld && mc.screen instanceof AbstractContainerScreen) {
                 SwapKeyState.pressStartNanos = System.nanoTime();
-                positionCursorIfEnabled(mc, mc.screen);
+                if (!cursorRepositionedThisPress) {
+                    positionCursorIfEnabled(mc, mc.screen);
+                    cursorRepositionedThisPress = true;
+                }
                 state = SwapState.WATCHING;
             }
             return;
@@ -188,8 +192,8 @@ public class InstantSwapClient {
 
         // WATCHING: check threshold
         if (state == SwapState.WATCHING) {
-            if (mc.screen == null) { state = SwapState.IDLE; return; }
-            if (!isInventoryKeyPhysicallyDown(mc)) { state = SwapState.IDLE; return; }
+            if (mc.screen == null) { state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
+            if (!isAnyTargetKeyPhysicallyDown(mc)) { state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
             if ((System.nanoTime() - SwapKeyState.pressStartNanos)
                     >= config.holdThresholdMs.get() * 1_000_000L) {
                 SwapKeyState.longPressConfirmed = true;
@@ -200,14 +204,15 @@ public class InstantSwapClient {
 
         // LONG_PRESS → release triggers swap
         if (state == SwapState.LONG_PRESS) {
-            if (mc.screen == null) { state = SwapState.IDLE; return; }
-            if (!isInventoryKeyPhysicallyDown(mc) || !SwapKeyState.inventoryKeyHeld) {
+            if (mc.screen == null) { state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
+            if (!isAnyTargetKeyPhysicallyDown(mc) || !SwapKeyState.inventoryKeyHeld) {
                 boolean swapped = performSwap(mc);
                 if (!swapped) {
                     int closeDelay = (mc.screen instanceof AbstractContainerScreen<?> s && isVanillaInventory(s)) ? 1 : 2;
                     SwapKeyState.closePendingTicks = closeDelay;
                 }
                 state = SwapState.IDLE;
+                cursorRepositionedThisPress = false;
             }
         }
     }
@@ -718,6 +723,18 @@ public class InstantSwapClient {
         InputConstants.Key key = mc.options.keyInventory.getKey();
         return key.getType() == InputConstants.Type.KEYSYM
                 && GLFW.glfwGetKey(mc.getWindow().getWindow(), key.getValue()) == GLFW.GLFW_PRESS;
+    }
+
+    /** Check if ANY tracked target key (inventory key or backpack key) is physically held. */
+    private static boolean isAnyTargetKeyPhysicallyDown(Minecraft mc) {
+        long window = mc.getWindow().getWindow();
+        for (InputConstants.Key key : SwapKeyState.getTargetKeys()) {
+            if (key.getType() == InputConstants.Type.KEYSYM
+                    && GLFW.glfwGetKey(window, key.getValue()) == GLFW.GLFW_PRESS) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isInventoryKeyEvent(Minecraft mc, InputEvent.Key event) {
