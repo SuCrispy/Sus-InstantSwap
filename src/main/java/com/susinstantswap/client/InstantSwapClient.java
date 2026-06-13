@@ -178,13 +178,11 @@ public class InstantSwapClient {
                 mc.player.closeContainer();
         }
 
-        // IDLE: wait for target key press while a container screen is already open.
-        // screenWasOpenAtPressStart ensures we don't engage the state machine
-        // when the key press itself opened the screen (short-press should just open UI).
+        // IDLE: wait for target key press with a container screen open.
+        // State machine always engages so long-press can be detected even
+        // when the key press itself opened the screen.
         if (state == SwapState.IDLE) {
-            if (SwapKeyState.inventoryKeyHeld && SwapKeyState.screenWasOpenAtPressStart
-                    && mc.screen instanceof AbstractContainerScreen) {
-                SwapKeyState.pressStartNanos = System.nanoTime();
+            if (SwapKeyState.inventoryKeyHeld && mc.screen instanceof AbstractContainerScreen) {
                 if (!cursorRepositionedThisPress) {
                     positionCursorIfEnabled(mc, mc.screen);
                     cursorRepositionedThisPress = true;
@@ -198,10 +196,14 @@ public class InstantSwapClient {
         if (state == SwapState.WATCHING) {
             if (mc.screen == null) { state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
             if (!isAnyTargetKeyPhysicallyDown(mc)) {
-                // Short press released before threshold — close screen (vanilla E behavior)
-                if (mc.screen instanceof AbstractContainerScreen && SwapKeyState.closePendingTicks <= 0) {
-                    mc.player.closeContainer();
+                // Short press released before threshold
+                if (SwapKeyState.screenWasOpenAtPressStart) {
+                    // Screen was already open → close (vanilla E behavior)
+                    if (SwapKeyState.closePendingTicks <= 0) {
+                        mc.player.closeContainer();
+                    }
                 }
+                // else: key press opened the screen → keep it open
                 state = SwapState.IDLE;
                 cursorRepositionedThisPress = false;
                 return;
