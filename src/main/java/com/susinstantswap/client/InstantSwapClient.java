@@ -438,7 +438,10 @@ public class InstantSwapClient {
         }
 
         // Case 3: PUT — hovered empty, hotbar has item → two-step PICKUP
-        if (!hs.hasItem() && !hotbarItem.isEmpty() && hs.mayPlace(hotbarItem)) {
+        //     Skip mayPlace for container slots — backpack mods may have
+        //     server-side filters the client can't predict.
+        if (!hs.hasItem() && !hotbarItem.isEmpty()
+                && (hs.mayPlace(hotbarItem) || !isPlayerInventorySlot(hs))) {
             Slot hotbarSlot = findMenuSlot(screen, mc.player.getInventory(), verifySelIdx);
             if (hotbarSlot != null && hotbarSlot.hasItem()) {
                 mc.getConnection().send(new ServerboundContainerClickPacket(
