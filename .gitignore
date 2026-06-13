@@ -24,3 +24,4 @@ run/
 
 # Logo variants (keep only Logo.png and Logo_512.png)
 Logo_Origin.png
+.gradle-home/

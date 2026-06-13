@@ -66,11 +66,6 @@ public class InstantSwapClient {
     private static ItemStack verifyPreHovered = ItemStack.EMPTY;
     private static ItemStack verifyPreHotbar = ItemStack.EMPTY;
 
-    // Multi-step PICKUP retry: stage 3→2→1→0
-    private static int pickupRetryStage = 0;
-    private static int pickupRetryTargetIdx = -1;
-    private static int pickupRetryScreenCid = -1;
-
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         screenOpenedByInteract = true;
@@ -156,62 +151,6 @@ public class InstantSwapClient {
             if (swapVerifyTicks == 0 && mc.screen instanceof AbstractContainerScreen<?> vScreen) {
                 verifySwapResult(mc, vScreen);
             }
-        }
-
-        // Multi-step PICKUP retry: stage 3 → PICKUP from hotbar
-        if (pickupRetryStage == 3 && mc.screen instanceof AbstractContainerScreen<?> rScreen
-                && mc.getConnection() != null
-                && rScreen.getMenu().containerId == pickupRetryScreenCid) {
-            Slot hotbarSlot = findMenuSlot(rScreen, mc.player.getInventory(), verifySelIdx);
-            if (hotbarSlot != null) {
-                int stateId = rScreen.getMenu().getStateId();
-                var cs = new Int2ObjectOpenHashMap<ItemStack>();
-                mc.getConnection().send(new ServerboundContainerClickPacket(
-                        pickupRetryScreenCid, stateId,
-                        hotbarSlot.index, 0, ClickType.PICKUP,
-                        ItemStack.EMPTY, cs));
-                pickupRetryStage = 1;
-                SwapKeyState.closePendingTicks = Math.max(SwapKeyState.closePendingTicks, 2);
-            } else {
-                mc.getConnection().send(new ServerboundContainerClickPacket(
-                        pickupRetryScreenCid, rScreen.getMenu().getStateId(),
-                        pickupRetryTargetIdx, 0, ClickType.PICKUP,
-                        ItemStack.EMPTY, new Int2ObjectOpenHashMap<>()));
-                pickupRetryStage = 0;
-            }
-        }
-        // Multi-step PICKUP retry: stage 2 (PUT) → PICKUP from hotbar
-        if (pickupRetryStage == 2 && mc.screen instanceof AbstractContainerScreen<?> rScreen
-                && mc.getConnection() != null
-                && rScreen.getMenu().containerId == pickupRetryScreenCid) {
-            Slot hotbarSlot = findMenuSlot(rScreen, mc.player.getInventory(), verifySelIdx);
-            if (hotbarSlot != null && hotbarSlot.hasItem()) {
-                int stateId = rScreen.getMenu().getStateId();
-                var cs = new Int2ObjectOpenHashMap<ItemStack>();
-                mc.getConnection().send(new ServerboundContainerClickPacket(
-                        pickupRetryScreenCid, stateId,
-                        hotbarSlot.index, 0, ClickType.PICKUP,
-                        ItemStack.EMPTY, cs));
-                pickupRetryStage = 1;
-                SwapKeyState.closePendingTicks = Math.max(SwapKeyState.closePendingTicks, 2);
-            } else {
-                pickupRetryStage = 0;
-            }
-        }
-        // Multi-step PICKUP retry: stage 1 → PICKUP on target (final)
-        if (pickupRetryStage == 1 && mc.screen instanceof AbstractContainerScreen<?> rScreen
-                && mc.getConnection() != null
-                && rScreen.getMenu().containerId == pickupRetryScreenCid) {
-            int stateId = rScreen.getMenu().getStateId();
-            var cs = new Int2ObjectOpenHashMap<ItemStack>();
-            mc.getConnection().send(new ServerboundContainerClickPacket(
-                    pickupRetryScreenCid, stateId,
-                    pickupRetryTargetIdx, 0, ClickType.PICKUP,
-                    ItemStack.EMPTY, cs));
-            pickupRetryStage = 0;
-            SwapKeyState.closePendingTicks = Math.max(SwapKeyState.closePendingTicks, 2);
-        } else if (pickupRetryStage == 1) {
-            pickupRetryStage = 0;
         }
 
         if (!configLogged) {
@@ -369,7 +308,7 @@ public class InstantSwapClient {
         }
 
         ItemStack hand = mc.player.getInventory().getItem(hotbarIdx);
-        if (!hand.isEmpty() && !hs.mayPlace(hand)) {
+        if (!hand.isEmpty() && !hs.mayPlace(hand) && isPlayerInventorySlot(hs)) {
             if (!suppressToast) SwapToast.warn("toast.susinstantswap.item_not_placeable");
             return false;
         }
@@ -401,59 +340,53 @@ public class InstantSwapClient {
                 hs.hasItem(), !hotbarItem.isEmpty(),
                 hs.hasItem() ? hs.mayPickup(mc.player) : "n/a", isPlayerInventorySlot(hs));
 
-        if (mc.getConnection() == null) return;
+        if (mc.gameMode == null) return;
 
         int cid = screen.getMenu().containerId;
-        int stateId = screen.getMenu().getStateId();
-        var cs = new Int2ObjectOpenHashMap<ItemStack>();
+        Slot hotbarSlot = findMenuSlot(screen, mc.player.getInventory(), verifySelIdx);
 
         // Case 1: TAKE — hovered has item, hotbar empty
         if (hs.hasItem() && hotbarItem.isEmpty()) {
-            if (isPlayerInventorySlot(hs)) {
-                // Player-inv slot → PICKUP to specific hotbar
-                mc.getConnection().send(new ServerboundContainerClickPacket(
-                        cid, stateId, hs.index, 0, ClickType.PICKUP, ItemStack.EMPTY, cs));
-                pickupRetryStage = 3;
-                pickupRetryTargetIdx = hs.index;
-                pickupRetryScreenCid = cid;
-                SwapKeyState.closePendingTicks = Math.max(SwapKeyState.closePendingTicks, 3);
+            if (hotbarSlot != null) {
+                // Two-step PICKUP: pick up from hovered, place in hotbar
+                mc.gameMode.handleInventoryMouseClick(cid, hs.index, 0, ClickType.PICKUP, mc.player);
+                mc.gameMode.handleInventoryMouseClick(cid, hotbarSlot.index, 0, ClickType.PICKUP, mc.player);
+                SwapLog.debug("  retry TAKE: PICKUP hoverIdx={} → hotbarIdx={}", hs.index, hotbarSlot.index);
             } else {
-                // Container slot → QUICK_MOVE
-                mc.getConnection().send(new ServerboundContainerClickPacket(
-                        cid, stateId, hs.index, 0, ClickType.QUICK_MOVE, ItemStack.EMPTY, cs));
-                SwapKeyState.closePendingTicks = Math.max(SwapKeyState.closePendingTicks, 2);
+                // Fallback: QUICK_MOVE (may go to wrong hotbar slot)
+                mc.gameMode.handleInventoryMouseClick(cid, hs.index, 0, ClickType.QUICK_MOVE, mc.player);
+                SwapLog.debug("  retry TAKE: QUICK_MOVE hoverIdx={} (no hotbar slot found)", hs.index);
             }
+            SwapKeyState.closePendingTicks = Math.max(SwapKeyState.closePendingTicks, 3);
             return;
         }
 
         // Case 2: EXCHANGE — both have items → three-step PICKUP
         if (hs.hasItem() && !hotbarItem.isEmpty()) {
-            mc.getConnection().send(new ServerboundContainerClickPacket(
-                    cid, stateId, hs.index, 0, ClickType.PICKUP, ItemStack.EMPTY, cs));
-            pickupRetryStage = 3;
-            pickupRetryTargetIdx = hs.index;
-            pickupRetryScreenCid = cid;
+            if (hotbarSlot != null) {
+                // Step 1: PICKUP hovered → cursor holds hovered item
+                mc.gameMode.handleInventoryMouseClick(cid, hs.index, 0, ClickType.PICKUP, mc.player);
+                // Step 2: PICKUP hotbar → cursor holds hotbar item, hovered item goes to hotbar
+                mc.gameMode.handleInventoryMouseClick(cid, hotbarSlot.index, 0, ClickType.PICKUP, mc.player);
+                // Step 3: PICKUP target → places hotbar item in hovered slot
+                mc.gameMode.handleInventoryMouseClick(cid, hs.index, 0, ClickType.PICKUP, mc.player);
+                SwapLog.debug("  retry EXCHANGE: 3-step PICKUP hoverIdx={} ↔ hotbarIdx={}", hs.index, hotbarSlot.index);
+            }
             SwapKeyState.closePendingTicks = Math.max(SwapKeyState.closePendingTicks, 3);
             return;
         }
 
         // Case 3: PUT — hovered empty, hotbar has item → two-step PICKUP
-        if (!hs.hasItem() && !hotbarItem.isEmpty()
-                && (hs.mayPlace(hotbarItem) || !isPlayerInventorySlot(hs))) {
-            SwapLog.debug("  retry PUT: emptyTarget={} mayPlace={} isPlayerInv={} hotbar={}",
-                    hs.index, hs.mayPlace(hotbarItem), isPlayerInventorySlot(hs), verifySelIdx);
-            Slot hotbarSlot = findMenuSlot(screen, mc.player.getInventory(), verifySelIdx);
-            if (hotbarSlot != null && hotbarSlot.hasItem()) {
-                mc.getConnection().send(new ServerboundContainerClickPacket(
-                        cid, stateId, hotbarSlot.index, 0, ClickType.PICKUP, ItemStack.EMPTY, cs));
-                pickupRetryStage = 2;
-                pickupRetryTargetIdx = hs.index;
-                pickupRetryScreenCid = cid;
-                SwapKeyState.closePendingTicks = Math.max(SwapKeyState.closePendingTicks, 2);
-            } else {
-                SwapLog.debug("  retry PUT SKIP: hotbar slot {} found={} hasItem={}",
-                        verifySelIdx, hotbarSlot != null, hotbarSlot != null && hotbarSlot.hasItem());
+        if (!hs.hasItem() && !hotbarItem.isEmpty()) {
+            if (hotbarSlot != null) {
+                // Step 1: PICKUP hotbar → cursor holds hotbar item
+                mc.gameMode.handleInventoryMouseClick(cid, hotbarSlot.index, 0, ClickType.PICKUP, mc.player);
+                // Step 2: PICKUP hovered → places item in target slot
+                mc.gameMode.handleInventoryMouseClick(cid, hs.index, 0, ClickType.PICKUP, mc.player);
+                SwapLog.debug("  retry PUT: PICKUP hotbarIdx={} → hoverIdx={}", hotbarSlot.index, hs.index);
             }
+            SwapKeyState.closePendingTicks = Math.max(SwapKeyState.closePendingTicks, 3);
+            return;
         }
     }
 
