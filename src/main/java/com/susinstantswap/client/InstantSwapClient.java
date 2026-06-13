@@ -91,6 +91,7 @@ public class InstantSwapClient {
         boolean isTopLevel = !(previousScreen instanceof AbstractContainerScreen);
 
         boolean openedDuringLongPress = SwapKeyState.inventoryKeyHeld
+                && SwapKeyState.lastTriggerKeyIsVanilla
                 && isBackpackScreen(s);
 
         if (byInteraction || (isTopLevel && !openedDuringLongPress)) {
@@ -193,7 +194,15 @@ public class InstantSwapClient {
         // WATCHING: check threshold
         if (state == SwapState.WATCHING) {
             if (mc.screen == null) { state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
-            if (!isAnyTargetKeyPhysicallyDown(mc)) { state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
+            if (!isAnyTargetKeyPhysicallyDown(mc)) {
+                // Short press released before threshold — close screen (vanilla E behavior)
+                if (mc.screen instanceof AbstractContainerScreen && SwapKeyState.closePendingTicks <= 0) {
+                    mc.player.closeContainer();
+                }
+                state = SwapState.IDLE;
+                cursorRepositionedThisPress = false;
+                return;
+            }
             if ((System.nanoTime() - SwapKeyState.pressStartNanos)
                     >= config.holdThresholdMs.get() * 1_000_000L) {
                 SwapKeyState.longPressConfirmed = true;

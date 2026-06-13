@@ -14,15 +14,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Intercepts Screen.keyPressed() for the inventory key on any
  * AbstractContainerScreen.
  *
- * <p>Two scenarios:</p>
- * <ul>
- *   <li><b>REPEAT (inventoryKeyHeld already true):</b> Block close to
- *       prevent flicker during long press. The screen stays open
- *       while the key is held.</li>
- *   <li><b>FRESH press (inventoryKeyHeld false):</b> Try GUI swap
- *       first. If not, let vanilla handle normally (E closes the
- *       screen — standard vanilla behavior).</li>
- * </ul>
+ * <p>Always blocks the vanilla close-on-E behavior so the swap state
+ * machine can decide whether to swap (long press) or close (short press).</p>
+ *
+ * <p>Key timing: this mixin runs BEFORE KeyClickMixin (which updates
+ * lastTriggerKeyIsVanilla), so we check the pressed key directly
+ * against the inventory key binding instead of relying on the stale flag.</p>
  */
 @Mixin(value = AbstractContainerScreen.class, remap = false)
 public class ScreenKeyMixin {
@@ -34,8 +31,10 @@ public class ScreenKeyMixin {
         Minecraft mc = Minecraft.getInstance();
         if (mc == null || mc.options == null) return;
 
+        // Only intercept the vanilla inventory key — not backpack mod keys
+        InputConstants.Key invKey = mc.options.keyInventory.getKey();
         InputConstants.Key pressed = InputConstants.getKey(keyCode, scanCode);
-        if (!SwapKeyState.isTargetKey(pressed)) return;
+        if (pressed.getType() != invKey.getType() || pressed.getValue() != invKey.getValue()) return;
 
         if (SwapKeyState.inventoryKeyHeld) {
             // REPEAT — block close to prevent flicker during long press
@@ -43,16 +42,15 @@ public class ScreenKeyMixin {
             return;
         }
 
-        // If screen was opened by a non-vanilla key (e.g. backpack mod),
-        // let vanilla handle normally — no swap, no interception.
-        if (!SwapKeyState.lastTriggerKeyIsVanilla) {
-            return;
-        }
+        // FRESH press of inventory key — always block close so the state
+        // machine can handle short-press-close vs long-press-swap
+        cir.setReturnValue(false);
 
-        // Fresh press — try GUI swap, otherwise let vanilla handle
-        if (InstantSwapClient.tryPerformGuiSwap((AbstractContainerScreen<?>) (Object) this)) {
-            cir.setReturnValue(true);
+        // Try instant GUI swap only when the screen was opened by vanilla key.
+        // (lastTriggerKeyIsVanilla is still valid here because it was set
+        // when the screen was first opened, not during this key event)
+        if (SwapKeyState.lastTriggerKeyIsVanilla) {
+            InstantSwapClient.tryPerformGuiSwap((AbstractContainerScreen<?>) (Object) this);
         }
-        // If GUI swap didn't fire: don't intercept — let vanilla close the screen
     }
 }
