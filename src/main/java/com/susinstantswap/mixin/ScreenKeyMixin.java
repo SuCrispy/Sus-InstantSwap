@@ -19,8 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *   <li><b>REPEAT</b> (inventoryKeyHeld=true): block close to prevent
  *       flicker during long-press detection.</li>
  *   <li><b>FRESH press, GUI swap key == inventory key (E)</b>: block
- *       close and try GUI swap. If swap succeeds, screen closes after
- *       swap. If swap fails, let vanilla close the screen.</li>
+ *       close, try swap, then always close the screen.</li>
  *   <li><b>FRESH press, GUI swap key ≠ inventory key</b>: don't
  *       intercept — vanilla closes the screen normally.</li>
  * </ol>
@@ -50,16 +49,10 @@ public class ScreenKeyMixin {
         if (guiSwapKey != null && !InstantSwapClient.isGuiSwapKeyUnbound()
                 && guiSwapKey.getType() == invKey.getType()
                 && guiSwapKey.getValue() == invKey.getValue()) {
-            // If the last swap attempt failed, let vanilla close the screen
-            // (prevents user being stuck: swap fails → press E again → close)
-            if (InstantSwapClient.wasLastGuiSwapFailed()) {
-                InstantSwapClient.resetGuiSwapFailed();
-                // Don't intercept → vanilla closes the screen
-                return;
-            }
-            // GUI swap key == inventory key → block close and try swap first
+            // GUI swap key == inventory key → try swap, then always close
             cir.setReturnValue(false);
             InstantSwapClient.tryPerformGuiSwap((AbstractContainerScreen<?>) (Object) this);
+            mc.player.closeContainer();
         }
         // else: GUI swap key is different or unbound → don't intercept,
         // let vanilla close the screen (normal E-to-close behavior).

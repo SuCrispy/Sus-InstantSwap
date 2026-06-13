@@ -40,12 +40,6 @@ public class InstantSwapClient {
     private static boolean configLogged = false;
     /** Guard: only reposition cursor once per IDLE→WATCHING transition. */
     private static boolean cursorRepositionedThisPress = false;
-    /**
-     * When GUI swap key == inventory key (E), and the last FRESH E press
-     * in a screen attempted a swap that failed, the next E press should
-     * fall through to vanilla close (so user isn't stuck with screen open).
-     */
-    private static boolean lastGuiSwapAttemptFailed = false;
 
     public static void init(SwapConfig cfg) {
         config = cfg;
@@ -265,16 +259,8 @@ public class InstantSwapClient {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.gameMode == null) return false;
         if (!config.guiSwapEnabled.get() || SWAP_IN_GUI_KEY.isUnbound()) return false;
-        boolean result = performSwap(mc);
-        lastGuiSwapAttemptFailed = !result;
-        return result;
+        return performSwap(mc);
     }
-
-    /** Check if the last GUI swap attempt failed (for ScreenKeyMixin to decide fallback). */
-    public static boolean wasLastGuiSwapFailed() { return lastGuiSwapAttemptFailed; }
-
-    /** Reset the failed flag (called by ScreenKeyMixin when letting vanilla close). */
-    public static void resetGuiSwapFailed() { lastGuiSwapAttemptFailed = false; }
 
     // ── Unified swap ──
 
