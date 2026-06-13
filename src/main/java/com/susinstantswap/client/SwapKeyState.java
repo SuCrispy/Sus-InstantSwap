@@ -160,7 +160,6 @@ public final class SwapKeyState {
     }
 
     private static void saveSnapshot(InputConstants.Key inventoryKey) {
-        trackedInventoryKey = inventoryKey;
         trackedMappingSnapshot.clear();
         for (KeyMapping km : KeyMapping.ALL.values()) {
             for (String pattern : BACKPACK_KEY_PATTERNS) {

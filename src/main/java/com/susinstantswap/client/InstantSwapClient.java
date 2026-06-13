@@ -222,7 +222,7 @@ public class InstantSwapClient {
 
         boolean keyDown = (action == GLFW.GLFW_PRESS);
         boolean isInventoryKey = isInventoryKeyEvent(mc, event);
-        boolean isGuiSwapKey = SWAP_IN_GUI_KEY.isUnbound() ? false : isGuiSwapKeyEvent(event);
+        boolean isGuiSwapKey = !SWAP_IN_GUI_KEY.isUnbound() && isGuiSwapKeyEvent(event);
 
         if (keyDown && isInventoryKey && mc.screen != null && hasEditBoxFocus(mc.screen)) {
             while (mc.options.keyInventory.consumeClick()) {}
@@ -478,7 +478,7 @@ public class InstantSwapClient {
             if (col == sel) {
                 Slot hotbarSlot = findHotbarMenuSlot(screen, col);
                 if (hotbarSlot != null && (s.hasItem() || hotbarSlot.hasItem())
-                        && s.mayPickup(mc.player) && (hotbarSlot.hasItem() ? hotbarSlot.mayPickup(mc.player) : true)) {
+                        && s.mayPickup(mc.player) && (!hotbarSlot.hasItem() || hotbarSlot.mayPickup(mc.player))) {
                     ItemStack hand = mc.player.getInventory().getItem(col);
                     if (hand.isEmpty() || s.mayPlace(hand)) {
                         performPickupExchange(mc, screen, s, col);
@@ -663,15 +663,14 @@ public class InstantSwapClient {
      */
     private static Slot findHotbarMenuSlot(AbstractContainerScreen<?> screen, int hotbarIdx) {
         // Standard lookup first
-        Slot s = findMenuSlot(screen, mc().player.getInventory(), hotbarIdx);
+        Inventory inv = Minecraft.getInstance().player.getInventory();
+        Slot s = findMenuSlot(screen, inv, hotbarIdx);
         if (s != null) return s;
         // Fallback: match by getContainerSlot() only (for wrapped slots)
         for (Slot slot : screen.getMenu().slots)
             if (slot.getContainerSlot() == hotbarIdx) return slot;
         return null;
     }
-
-    private static Minecraft mc() { return Minecraft.getInstance(); }
 
     private static boolean isVanillaInventory(AbstractContainerScreen<?> screen) {
         return screen instanceof InventoryScreen || screen instanceof CreativeModeInventoryScreen;
@@ -683,20 +682,6 @@ public class InstantSwapClient {
 
     private static int hotbarSize(Minecraft mc) {
         return mc.player.getInventory().items.size() - 27;
-    }
-
-    private static boolean isContainerOpener(ItemStack hotbarStack, net.minecraft.world.inventory.AbstractContainerMenu menu) {
-        if (hotbarStack.isEmpty()) return false;
-        Minecraft mc = Minecraft.getInstance();
-        var playerInv = mc.player.getInventory();
-        for (Slot slot : menu.slots) {
-            if (slot.container == playerInv) continue;
-            if (!slot.hasItem()) continue;
-            boolean locked = !slot.mayPickup(mc.player);
-            boolean sameItem = slot.getItem().getItem() == hotbarStack.getItem();
-            if (locked && sameItem) return true;
-        }
-        return false;
     }
 
     private static int freeSlot(Minecraft mc) {
