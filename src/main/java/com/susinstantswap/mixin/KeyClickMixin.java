@@ -2,7 +2,9 @@ package com.susinstantswap.mixin;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.susinstantswap.client.SwapKeyState;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -21,6 +23,8 @@ public abstract class KeyClickMixin {
             return;
         }
         SwapKeyState.updateLastTriggerKeyIsVanilla(key);
+        SwapKeyState.screenWasOpenAtPressStart =
+                Minecraft.getInstance().screen instanceof AbstractContainerScreen;
         SwapKeyState.inventoryKeyHeld = true;
         SwapKeyState.pressStartNanos = System.nanoTime();
         SwapKeyState.longPressConfirmed = false;

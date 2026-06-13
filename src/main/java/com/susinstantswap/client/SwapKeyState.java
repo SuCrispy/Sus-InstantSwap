@@ -28,6 +28,14 @@ public final class SwapKeyState {
      */
     public static volatile boolean lastTriggerKeyIsVanilla = true;
 
+    /**
+     * Whether a container screen was already open when the target key
+     * was first pressed.  When false, the key press itself opened the
+     * screen, so the swap state machine should NOT engage (short press
+     * should just open the screen and leave it open).
+     */
+    public static volatile boolean screenWasOpenAtPressStart = false;
+
     /** Set of {@link InputConstants.Key} that should be intercepted (inventory + backpack mod keys). */
     private static volatile Set<InputConstants.Key> targetKeys = Collections.emptySet();
 

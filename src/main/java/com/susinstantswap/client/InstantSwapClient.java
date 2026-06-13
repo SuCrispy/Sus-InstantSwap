@@ -178,9 +178,12 @@ public class InstantSwapClient {
                 mc.player.closeContainer();
         }
 
-        // IDLE: wait for any target key press (inventory key or backpack key)
+        // IDLE: wait for target key press while a container screen is already open.
+        // screenWasOpenAtPressStart ensures we don't engage the state machine
+        // when the key press itself opened the screen (short-press should just open UI).
         if (state == SwapState.IDLE) {
-            if (SwapKeyState.inventoryKeyHeld && mc.screen instanceof AbstractContainerScreen) {
+            if (SwapKeyState.inventoryKeyHeld && SwapKeyState.screenWasOpenAtPressStart
+                    && mc.screen instanceof AbstractContainerScreen) {
                 SwapKeyState.pressStartNanos = System.nanoTime();
                 if (!cursorRepositionedThisPress) {
                     positionCursorIfEnabled(mc, mc.screen);
