@@ -1,6 +1,7 @@
 package com.susinstantswap.mixin;
 
 import com.susinstantswap.SusInstantSwapMod;
+import com.susinstantswap.client.BackpackScreenMatcher;
 import com.susinstantswap.client.RowArrowWidget;
 import com.susinstantswap.client.SwapKeyState;
 import com.susinstantswap.config.SwapConfig;
@@ -23,7 +24,10 @@ public class ContainerScreenMixin {
                           float partialTick, CallbackInfo ci) {
         if (!SwapKeyState.modEnabled) return;
 
-        if (!SwapKeyState.lastTriggerKeyIsVanilla) return;
+        // Skip for backpack screens — handled by onScreenRenderPost fallback
+        // (some backpack screens don't call super.render(), so TAIL won't fire)
+        AbstractContainerScreen<?> self = (AbstractContainerScreen<?>) (Object) this;
+        if (BackpackScreenMatcher.isBackpackScreen(self)) return;
 
         SwapConfig cfg = SusInstantSwapMod.CONFIG;
         if (cfg == null || !cfg.rowSwapEnabled.get()) {
@@ -33,8 +37,6 @@ public class ContainerScreenMixin {
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-
-        AbstractContainerScreen<?> self = (AbstractContainerScreen<?>) (Object) this;
 
         RowArrowWidget.detectRows(self, mc.player);
         RowArrowWidget.visible = true;
