@@ -454,7 +454,7 @@ public class InstantSwapClient {
                 SwapLog.debug("  retry PUT SKIP: hotbar slot {} found={} hasItem={}",
                         verifySelIdx, hotbarSlot != null, hotbarSlot != null && hotbarSlot.hasItem());
             }
-    }
+        }
 
     private static boolean containerSwap(AbstractContainerScreen<?> s, int slotIdx, int hotbar) {
         Minecraft mc = Minecraft.getInstance();
