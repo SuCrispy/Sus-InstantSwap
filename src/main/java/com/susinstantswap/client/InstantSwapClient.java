@@ -455,6 +455,7 @@ public class InstantSwapClient {
                         verifySelIdx, hotbarSlot != null, hotbarSlot != null && hotbarSlot.hasItem());
             }
         }
+    }
 
     private static boolean containerSwap(AbstractContainerScreen<?> s, int slotIdx, int hotbar) {
         Minecraft mc = Minecraft.getInstance();
