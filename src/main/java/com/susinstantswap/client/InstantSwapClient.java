@@ -438,10 +438,10 @@ public class InstantSwapClient {
         }
 
         // Case 3: PUT — hovered empty, hotbar has item → two-step PICKUP
-        //     Skip mayPlace for container slots — backpack mods may have
-        //     server-side filters the client can't predict.
         if (!hs.hasItem() && !hotbarItem.isEmpty()
                 && (hs.mayPlace(hotbarItem) || !isPlayerInventorySlot(hs))) {
+            SwapLog.debug("  retry PUT: emptyTarget={} mayPlace={} isPlayerInv={} hotbar={}",
+                    hs.index, hs.mayPlace(hotbarItem), isPlayerInventorySlot(hs), verifySelIdx);
             Slot hotbarSlot = findMenuSlot(screen, mc.player.getInventory(), verifySelIdx);
             if (hotbarSlot != null && hotbarSlot.hasItem()) {
                 mc.getConnection().send(new ServerboundContainerClickPacket(
@@ -450,8 +450,10 @@ public class InstantSwapClient {
                 pickupRetryTargetIdx = hs.index;
                 pickupRetryScreenCid = cid;
                 SwapKeyState.closePendingTicks = Math.max(SwapKeyState.closePendingTicks, 2);
+            } else {
+                SwapLog.debug("  retry PUT SKIP: hotbar slot {} found={} hasItem={}",
+                        verifySelIdx, hotbarSlot != null, hotbarSlot != null && hotbarSlot.hasItem());
             }
-        }
     }
 
     private static boolean containerSwap(AbstractContainerScreen<?> s, int slotIdx, int hotbar) {
