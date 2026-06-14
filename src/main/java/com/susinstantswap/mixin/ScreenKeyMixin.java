@@ -11,17 +11,17 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Intercepts Screen.keyPressed() for the inventory key on
- * AbstractContainerScreen.
+ * Intercepts AbstractContainerScreen.keyPressed() for the inventory key.
  *
  * <p>Three cases:</p>
  * <ol>
- *   <li><b>REPEAT</b> (inventoryKeyHeld=true): block close to prevent
- *       flicker during long-press detection.</li>
- *   <li><b>FRESH press, GUI swap key == inventory key (E)</b>: block
- *       close, try swap, then always close the screen.</li>
- *   <li><b>FRESH press, GUI swap key ≠ inventory key</b>: don't
- *       intercept — vanilla closes the screen normally.</li>
+ *   <li><b>REPEAT</b> (inventoryKeyHeld=true): block to prevent flicker
+ *       during long-press detection.</li>
+ *   <li><b>FRESH press, GUI swap key == inventory key</b>: try swap first,
+ *       then close the screen via {@code onClose()}. Mark key as handled
+ *       to prevent reopening.</li>
+ *   <li><b>FRESH press, GUI swap key ≠ inventory key</b>: don't intercept
+ *       — vanilla closes normally.</li>
  * </ol>
  */
 @Mixin(value = AbstractContainerScreen.class, remap = false)
@@ -39,22 +39,25 @@ public class ScreenKeyMixin {
         if (pressed.getType() != invKey.getType() || pressed.getValue() != invKey.getValue()) return;
 
         if (SwapKeyState.inventoryKeyHeld) {
-            // REPEAT — block close to prevent flicker during long-press detection
+            // REPEAT — block to prevent flicker during long-press detection
             cir.setReturnValue(false);
             return;
         }
 
-        // FRESH press — check if GUI swap key is bound to the same key as inventory
+        // FRESH press — check if GUI swap key matches inventory key
         InputConstants.Key guiSwapKey = InstantSwapClient.getGuiSwapKey();
         if (guiSwapKey != null && !InstantSwapClient.isGuiSwapKeyUnbound()
                 && guiSwapKey.getType() == invKey.getType()
                 && guiSwapKey.getValue() == invKey.getValue()) {
-            // GUI swap key == inventory key → try swap, then always close
-            cir.setReturnValue(false);
+            // GUI swap key == inventory key → try swap then close
             InstantSwapClient.tryPerformGuiSwap((AbstractContainerScreen<?>) (Object) this);
-            mc.player.closeContainer();
+            ((AbstractContainerScreen<?>) (Object) this).onClose();
+            // Consume pending clicks so tick handler doesn't reopen
+            while (mc.options.keyInventory.consumeClick()) {}
+            cir.setReturnValue(true);
+            return;
         }
         // else: GUI swap key is different or unbound → don't intercept,
-        // let vanilla close the screen (normal E-to-close behavior).
+        // let vanilla keyPressed() handle close normally.
     }
 }
