@@ -1,9 +1,5 @@
 package com.susinstantswap.client;
 
-import com.susinstantswap.SusInstantSwapMod;
-import com.susinstantswap.config.SwapConfig;
-
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 

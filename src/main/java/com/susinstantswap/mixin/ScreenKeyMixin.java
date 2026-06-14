@@ -50,7 +50,7 @@ public class ScreenKeyMixin {
                 && guiSwapKey.getType() == invKey.getType()
                 && guiSwapKey.getValue() == invKey.getValue()) {
             // GUI swap key == inventory key → try swap then close
-            InstantSwapClient.tryPerformGuiSwap((AbstractContainerScreen<?>) (Object) this);
+            InstantSwapClient.tryPerformGuiSwap();
             ((AbstractContainerScreen<?>) (Object) this).onClose();
             // Consume pending clicks so tick handler doesn't reopen
             while (mc.options.keyInventory.consumeClick()) {}

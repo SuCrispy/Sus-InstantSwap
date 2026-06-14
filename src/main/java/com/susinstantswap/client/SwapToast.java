@@ -35,30 +35,12 @@ public final class SwapToast {
     private SwapToast() {}
 
     /**
-     * 显示绿色/白色信息提示。
-     * @param key 翻译键
-     * @param args 格式化参数
-     */
-    public static void info(String key, Object... args) {
-        show(ChatFormatting.WHITE, key, args);
-    }
-
-    /**
      * 显示黄色警告提示。
      * @param key 翻译键
      * @param args 格式化参数
      */
     public static void warn(String key, Object... args) {
         show(ChatFormatting.YELLOW, key, args);
-    }
-
-    /**
-     * 显示红色错误提示。
-     * @param key 翻译键
-     * @param args 格式化参数
-     */
-    public static void error(String key, Object... args) {
-        show(ChatFormatting.RED, key, args);
     }
 
     private static void show(ChatFormatting color, String key, Object... args) {

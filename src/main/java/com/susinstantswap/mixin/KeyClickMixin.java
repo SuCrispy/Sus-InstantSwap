@@ -27,7 +27,6 @@ public abstract class KeyClickMixin {
                 Minecraft.getInstance().screen instanceof AbstractContainerScreen;
         SwapKeyState.inventoryKeyHeld = true;
         SwapKeyState.pressStartNanos = System.nanoTime();
-        SwapKeyState.longPressConfirmed = false;
     }
 
     @Inject(method = "set(Lcom/mojang/blaze3d/platform/InputConstants$Key;Z)V", at = @At("HEAD"))
@@ -36,6 +35,5 @@ public abstract class KeyClickMixin {
         if (pressed || !SwapKeyState.isTargetKey(key)) return;
         SwapKeyState.updateLastTriggerKeyIsVanilla(key);
         SwapKeyState.inventoryKeyHeld = false;
-        SwapKeyState.longPressConfirmed = false;
     }
 }

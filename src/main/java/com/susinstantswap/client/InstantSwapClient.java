@@ -206,7 +206,6 @@ public class InstantSwapClient {
             }
             if ((System.nanoTime() - SwapKeyState.pressStartNanos)
                     >= config.holdThresholdMs.get() * 1_000_000L) {
-                SwapKeyState.longPressConfirmed = true;
                 state = SwapState.LONG_PRESS;
             }
             return;
@@ -255,7 +254,7 @@ public class InstantSwapClient {
     }
 
     /** Try GUI swap when the GUI swap key is pressed (called from ScreenKeyMixin). */
-    public static boolean tryPerformGuiSwap(AbstractContainerScreen<?> screen) {
+    public static boolean tryPerformGuiSwap() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.gameMode == null) return false;
         if (!config.guiSwapEnabled.get() || SWAP_IN_GUI_KEY.isUnbound()) return false;
@@ -722,13 +721,6 @@ public class InstantSwapClient {
         return -1;
     }
 
-    public static boolean isSwapKey(InputConstants.Key key) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null || mc.options == null) return false;
-        InputConstants.Key invKey = mc.options.keyInventory.getKey();
-        return invKey.getType() == key.getType() && invKey.getValue() == key.getValue();
-    }
-
     /** Returns the current GUI swap key binding, or null if not initialized. */
     public static InputConstants.Key getGuiSwapKey() {
         return SWAP_IN_GUI_KEY != null ? SWAP_IN_GUI_KEY.getKey() : null;
@@ -737,12 +729,6 @@ public class InstantSwapClient {
     /** Returns true if the GUI swap key is unbound (no key assigned). */
     public static boolean isGuiSwapKeyUnbound() {
         return SWAP_IN_GUI_KEY == null || SWAP_IN_GUI_KEY.isUnbound();
-    }
-
-    private static boolean isInventoryKeyPhysicallyDown(Minecraft mc) {
-        InputConstants.Key key = mc.options.keyInventory.getKey();
-        return key.getType() == InputConstants.Type.KEYSYM
-                && GLFW.glfwGetKey(mc.getWindow().getWindow(), key.getValue()) == GLFW.GLFW_PRESS;
     }
 
     /** Check if ANY tracked target key (inventory key or backpack key) is physically held. */

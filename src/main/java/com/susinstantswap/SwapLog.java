@@ -50,14 +50,4 @@ public final class SwapLog {
     public static void warn(String msg, Object... args) {
         LOGGER.warn("[SusInstantSwap] " + msg, args);
     }
-
-    /** Error log — always visible. */
-    public static void error(String msg, Object... args) {
-        LOGGER.error("[SusInstantSwap] " + msg, args);
-    }
-
-    /** Returns true when debug logging is active (config loaded and debug=true). */
-    public static boolean shouldDebug() {
-        return config != null && config.debug.get();
-    }
 }
