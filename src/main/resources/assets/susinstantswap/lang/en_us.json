@@ -12,7 +12,7 @@
   "config.susinstantswap.mouseReposition": "Mouse Auto-move",
   "config.susinstantswap.mouseReposition.tooltip": "When opening a container or the inventory, the mouse cursor automatically moves to the bottom-right corner of the screen.",
   "config.susinstantswap.guiSwapEnabled": "GUI Swap",
-  "config.susinstantswap.guiSwapEnabled.tooltip": "While a container screen is open, press the inventory key to swap items and close the screen instantly.",
+  "config.susinstantswap.guiSwapEnabled.tooltip": "Press a key to swap items in container screens (default: Left Alt, rebindable).",
   "config.susinstantswap.emptySlotSwapEnabled": "Empty-Slot Swap",
   "config.susinstantswap.emptySlotSwapEnabled.tooltip": "Allow swapping with empty slots as well.",
   "config.susinstantswap.rowSwapEnabled": "Row Swap",
@@ -24,6 +24,5 @@
   "toast.susinstantswap.empty_slot_swap_disabled": "Empty-slot swap is disabled",
   "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "Item type mismatch",
-  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now",
-  "toast.susinstantswap.slot_type_mismatch": "Target slot type mismatch"
+  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
 }

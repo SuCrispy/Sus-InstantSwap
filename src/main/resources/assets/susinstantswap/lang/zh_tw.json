@@ -24,6 +24,5 @@
   "toast.susinstantswap.empty_slot_swap_disabled": "空位交換未開啟",
   "toast.susinstantswap.item_in_use": "當前物品無法交換",
   "toast.susinstantswap.item_not_placeable": "物品類型不匹配",
-  "toast.susinstantswap.slot_locked": "目標欄位無法交換",
-  "toast.susinstantswap.slot_type_mismatch": "Target slot type mismatch"
+  "toast.susinstantswap.slot_locked": "目標欄位無法交換"
 }

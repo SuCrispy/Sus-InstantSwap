@@ -24,6 +24,5 @@
   "toast.susinstantswap.empty_slot_swap_disabled": "Výměna prázdných slotů je zakázána, nelze vyměnit s prázdným slotem",
   "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "Předmět v ruce nelze umístit do tohoto slotu",
-  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now",
-  "toast.susinstantswap.slot_type_mismatch": "Target slot type mismatch"
+  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
 }

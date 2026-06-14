@@ -24,6 +24,5 @@
   "toast.susinstantswap.empty_slot_swap_disabled": "Wisselen lege plekken uitgeschakeld, kan niet wisselen met lege plek",
   "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "Item in de hand kan niet op deze plek worden geplaatst",
-  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now",
-  "toast.susinstantswap.slot_type_mismatch": "Target slot type mismatch"
+  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
 }

@@ -24,6 +24,5 @@
   "toast.susinstantswap.empty_slot_swap_disabled": "Tukar slot kosong dinonaktifkan, tidak dapat menukar dengan slot kosong",
   "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "Item di tangan tidak dapat ditempatkan di slot ini",
-  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now",
-  "toast.susinstantswap.slot_type_mismatch": "Target slot type mismatch"
+  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
 }

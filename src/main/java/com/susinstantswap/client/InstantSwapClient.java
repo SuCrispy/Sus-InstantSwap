@@ -366,11 +366,11 @@ public class InstantSwapClient {
         // validate mayPlace/mayPickup to reject incompatible slots early
         if (!isPlayerInventorySlot(hs) && !isBackpackScreen(screen)) {
             if (!hand.isEmpty() && !hs.mayPlace(hand)) {
-                if (!suppressToast) SwapToast.warn("toast.susinstantswap.slot_type_mismatch");
+                if (!suppressToast) SwapToast.warn("toast.susinstantswap.item_not_placeable");
                 return false;
             }
             if (hs.hasItem() && !hs.mayPickup(mc.player)) {
-                if (!suppressToast) SwapToast.warn("toast.susinstantswap.slot_type_mismatch");
+                if (!suppressToast) SwapToast.warn("toast.susinstantswap.item_not_placeable");
                 return false;
             }
         }
