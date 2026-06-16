@@ -1,7 +1,7 @@
 package com.susinstantswap;
 
 import com.mojang.logging.LogUtils;
-import com.susinstantswap.config.SwapConfig;
+import com.susinstantswap.config.SwapConfigAdapter;
 import org.slf4j.Logger;
 
 /**
@@ -14,12 +14,12 @@ import org.slf4j.Logger;
  * </ul>
  * {@link #info}, {@link #warn}, {@link #error} always output regardless of debug mode.
  * <p>
- * Call {@link #init(SwapConfig)} once during mod construction before any logging occurs.
+ * Call {@link #init(SwapConfigAdapter)} once during mod construction before any logging occurs.
  */
 public final class SwapLog {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static SwapConfig config;
+    private static SwapConfigAdapter config;
 
     private SwapLog() {}
 
@@ -27,7 +27,7 @@ public final class SwapLog {
      * Bind the mod config so that {@link #debug} can read the live {@code debug} flag.
      * Must be called once before any log statements.
      */
-    public static void init(SwapConfig cfg) {
+    public static void init(SwapConfigAdapter cfg) {
         config = cfg;
     }
 
@@ -41,7 +41,7 @@ public final class SwapLog {
      * If config has not been initialised yet this method is a no-op.
      */
     public static void debug(String msg, Object... args) {
-        if (config != null && config.debug.get()) {
+        if (config != null && config.debug()) {
             LOGGER.info("[SusInstantSwap] " + msg, args);
         }
     }

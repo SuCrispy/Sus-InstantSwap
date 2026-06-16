@@ -1,10 +1,9 @@
 package com.susinstantswap.mixin;
 
-import com.susinstantswap.SusInstantSwapMod;
 import com.susinstantswap.client.BackpackScreenMatcher;
 import com.susinstantswap.client.RowArrowWidget;
 import com.susinstantswap.client.SwapKeyState;
-import com.susinstantswap.config.SwapConfig;
+import com.susinstantswap.config.SwapConfigAdapter;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -29,8 +28,8 @@ public class ContainerScreenMixin {
         AbstractContainerScreen<?> self = (AbstractContainerScreen<?>) (Object) this;
         if (BackpackScreenMatcher.isBackpackScreen(self)) return;
 
-        SwapConfig cfg = SusInstantSwapMod.CONFIG;
-        if (cfg == null || !cfg.rowSwapEnabled.get()) {
+        SwapConfigAdapter cfg = SwapKeyState.getConfig();
+        if (cfg == null || !cfg.rowSwapEnabled()) {
             RowArrowWidget.visible = false;
             return;
         }

@@ -2,6 +2,7 @@ package com.susinstantswap.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.susinstantswap.SwapLog;
+import com.susinstantswap.config.SwapConfigAdapter;
 import net.minecraft.client.KeyMapping;
 
 import java.util.Collections;
@@ -104,6 +105,13 @@ public final class SwapKeyState {
     }
 
     private SwapKeyState() {}
+
+    /** Config reference for use by Mixins and other classes that can't receive config via init(). */
+    static SwapConfigAdapter config;
+
+    /** Called by InstantSwapClient.init() to make config available to platform-independent code. */
+    public static void setConfig(SwapConfigAdapter cfg) { config = cfg; }
+    public static SwapConfigAdapter getConfig() { return config; }
 
     /** Call once during client init to scan all registered KeyMappings and populate targetKeys. */
     public static void refreshTargetKeys(InputConstants.Key inventoryKey) {

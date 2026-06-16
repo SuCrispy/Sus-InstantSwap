@@ -2,7 +2,7 @@ package com.susinstantswap.config;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
 
-public class SwapConfig {
+public class SwapConfig implements SwapConfigAdapter {
     public final ModConfigSpec.BooleanValue modEnabled;
     public final ModConfigSpec.IntValue holdThresholdMs;
     public final ModConfigSpec.BooleanValue soundEnabled;
@@ -34,4 +34,16 @@ public class SwapConfig {
         debug = builder.translation("config.susinstantswap.debug")
                 .comment("Debug Logging").define("debug", false);
     }
+
+    // ── SwapConfigAdapter implementation ──
+
+    @Override public boolean modEnabled()            { return modEnabled.get(); }
+    @Override public int     holdThresholdMs()        { return holdThresholdMs.get(); }
+    @Override public boolean soundEnabled()           { return soundEnabled.get(); }
+    @Override public boolean mouseReposition()        { return mouseReposition.get(); }
+    @Override public boolean guiSwapEnabled()         { return guiSwapEnabled.get(); }
+    @Override public boolean emptySlotSwapEnabled()   { return emptySlotSwapEnabled.get(); }
+    @Override public boolean rowSwapEnabled()         { return rowSwapEnabled.get(); }
+    @Override public boolean toastEnabled()           { return toastEnabled.get(); }
+    @Override public boolean debug()                  { return debug.get(); }
 }

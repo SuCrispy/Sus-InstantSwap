@@ -6,8 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.susinstantswap.SusInstantSwapMod;
-import com.susinstantswap.config.SwapConfig;
+import com.susinstantswap.config.SwapConfigAdapter;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -47,6 +46,10 @@ public class RowArrowWidget {
     private static final int[][] rowSlots    = new int[ROW_COUNT][9];
     private static int panelLeft;
     private static boolean rowsDetected = false;
+
+    private static SwapConfigAdapter config;
+
+    public static void init(SwapConfigAdapter cfg) { config = cfg; }
 
     public static void detectRows(AbstractContainerScreen<?> screen, LocalPlayer player) {
         rowsDetected = false;
@@ -152,8 +155,7 @@ public class RowArrowWidget {
         }
         if (hoveredRow >= 0 && prev != hoveredRow) {
             Minecraft mc = Minecraft.getInstance();
-            SwapConfig cfg = SusInstantSwapMod.CONFIG;
-            if (mc.player != null && cfg != null && cfg.soundEnabled.get()) {
+            if (mc.player != null && config != null && config.soundEnabled()) {
                 mc.player.playSound(SoundEvents.NOTE_BLOCK_HAT.value(), 0.3f, 1.8f);
             }
         }
