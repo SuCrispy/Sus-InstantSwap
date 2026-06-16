@@ -41,4 +41,13 @@ public interface SwapConfigAdapter {
 
     /** Whether debug logging is enabled. */
     boolean debug();
+
+    /**
+     * Hotbar priority mode (survival only).
+     * When swapping an item with a full hand, if any hotbar slot (other than
+     * the currently selected one) is empty, the held item is stashed into that
+     * empty slot first, then the target item is picked into the hand.
+     * Falls back to normal swap if the hotbar is completely full.
+     */
+    boolean hotbarPriorityEnabled();
 }

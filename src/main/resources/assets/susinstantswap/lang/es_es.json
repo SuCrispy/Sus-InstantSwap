@@ -21,6 +21,8 @@
   "config.susinstantswap.toastEnabled.tooltip": "Mostrar advertencias, errores e información en la barra de acción.",
   "config.susinstantswap.debug": "Registro de depuración",
   "config.susinstantswap.debug.tooltip": "Mostrar información de depuración en el registro del juego.",
+  "config.susinstantswap.hotbarPriorityEnabled": "Hotbar Priority",
+  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Put the swapped-out item into an empty hotbar slot first.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Intercambio de huecos vacíos desactivado, no se puede intercambiar con hueco vacío",
   "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "El objeto en la mano no se puede colocar en este hueco",

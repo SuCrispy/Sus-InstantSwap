@@ -21,6 +21,8 @@
   "config.susinstantswap.toastEnabled.tooltip": "교환 실패 시 화면에 떠 있는 알림을 표시합니다.",
   "config.susinstantswap.debug": "디버그 로깅",
   "config.susinstantswap.debug.tooltip": "게임 로그에 디버그 메시지를 출력합니다.",
+  "config.susinstantswap.hotbarPriorityEnabled": "Hotbar Priority",
+  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Put the swapped-out item into an empty hotbar slot first.",
   "toast.susinstantswap.empty_slot_swap_disabled": "빈 슬롯 교환이 비활성화되었습니다",
   "toast.susinstantswap.item_in_use": "현재 아이템을 교환할 수 없습니다",
   "toast.susinstantswap.item_not_placeable": "아이템 유형이 일치하지 않습니다",

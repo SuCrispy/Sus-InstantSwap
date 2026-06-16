@@ -21,6 +21,8 @@
   "config.susinstantswap.toastEnabled.tooltip": "Eylem çubuğunda uyarıları, hataları ve bilgileri göster.",
   "config.susinstantswap.debug": "Hata Ayıklama Günlüğü",
   "config.susinstantswap.debug.tooltip": "Hata ayıklama bilgilerini oyun günlüğüne yazdır.",
+  "config.susinstantswap.hotbarPriorityEnabled": "Hotbar Priority",
+  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Put the swapped-out item into an empty hotbar slot first.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Boş yuva değiştirme devre dışı, boş yuva ile değiştirilemez",
   "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "Eldeki eşya bu yuvaya yerleştirilemez",

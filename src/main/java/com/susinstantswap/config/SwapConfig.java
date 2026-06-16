@@ -7,6 +7,7 @@ public class SwapConfig implements SwapConfigAdapter {
     public final ModConfigSpec.IntValue holdThresholdMs;
     public final ModConfigSpec.BooleanValue soundEnabled;
     public final ModConfigSpec.BooleanValue mouseReposition;
+    public final ModConfigSpec.BooleanValue hotbarPriorityEnabled;
     public final ModConfigSpec.BooleanValue guiSwapEnabled;
     public final ModConfigSpec.BooleanValue emptySlotSwapEnabled;
     public final ModConfigSpec.BooleanValue rowSwapEnabled;
@@ -23,6 +24,8 @@ public class SwapConfig implements SwapConfigAdapter {
                 .comment("Swap Sound").define("soundEnabled", true);
         mouseReposition = builder.translation("config.susinstantswap.mouseReposition")
                 .comment("Open container or inventory, the mouse will automatically move to the bottom-right corner").define("mouseReposition", true);
+        hotbarPriorityEnabled = builder.translation("config.susinstantswap.hotbarPriorityEnabled")
+                .comment("Before swapping, stash the held item into an empty hotbar slot first if available").define("hotbarPriorityEnabled", false);
         guiSwapEnabled = builder.translation("config.susinstantswap.guiSwapEnabled")
                 .comment("In container screens, press the GUI swap key to directly swap items and close the screen").define("guiSwapEnabled", false);
         emptySlotSwapEnabled = builder.translation("config.susinstantswap.emptySlotSwapEnabled")
@@ -41,6 +44,7 @@ public class SwapConfig implements SwapConfigAdapter {
     @Override public int     holdThresholdMs()        { return holdThresholdMs.get(); }
     @Override public boolean soundEnabled()           { return soundEnabled.get(); }
     @Override public boolean mouseReposition()        { return mouseReposition.get(); }
+    @Override public boolean hotbarPriorityEnabled()  { return hotbarPriorityEnabled.get(); }
     @Override public boolean guiSwapEnabled()         { return guiSwapEnabled.get(); }
     @Override public boolean emptySlotSwapEnabled()   { return emptySlotSwapEnabled.get(); }
     @Override public boolean rowSwapEnabled()         { return rowSwapEnabled.get(); }

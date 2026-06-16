@@ -21,6 +21,8 @@
   "config.susinstantswap.toastEnabled.tooltip": "交換失敗時に画面上にフローティング通知を表示します。",
   "config.susinstantswap.debug": "デバッグログ",
   "config.susinstantswap.debug.tooltip": "ゲームログにデバッグメッセージを出力します。",
+  "config.susinstantswap.hotbarPriorityEnabled": "ホットバー優先",
+  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "交換時に手持ちアイテムを先にホットバーの空きスロットへ移動します。",
   "toast.susinstantswap.empty_slot_swap_disabled": "空スロット交換が無効です",
   "toast.susinstantswap.item_in_use": "現在のアイテムは交換できません",
   "toast.susinstantswap.item_not_placeable": "アイテムタイプが一致しません",

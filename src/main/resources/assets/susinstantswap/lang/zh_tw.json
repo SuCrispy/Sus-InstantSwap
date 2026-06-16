@@ -21,6 +21,8 @@
   "config.susinstantswap.toastEnabled.tooltip": "交換失敗時在螢幕上顯示浮窗提示。",
   "config.susinstantswap.debug": "除錯日誌",
   "config.susinstantswap.debug.tooltip": "輸出除錯資訊到遊戲日誌。",
+  "config.susinstantswap.hotbarPriorityEnabled": "快捷栏優先",
+  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "優先將換下來的物品放入快捷欄的空位。",
   "toast.susinstantswap.empty_slot_swap_disabled": "空位交換未開啟",
   "toast.susinstantswap.item_in_use": "當前物品無法交換",
   "toast.susinstantswap.item_not_placeable": "物品類型不匹配",

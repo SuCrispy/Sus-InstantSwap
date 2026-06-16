@@ -81,6 +81,28 @@ public final class SwapEngine {
 
         int closeDelay = isVanillaInventory(screen) ? 1 : 2;
 
+        // Hotbar priority (universal pre-swap gate): if the hotbar has an empty
+        // slot, stash the held item there first, then pick the target into the hand.
+        // Applies to all containers (including backpack mods) except creative tabs.
+        if (config.hotbarPriorityEnabled()
+                && hs.hasItem() && !mc.player.getInventory().getItem(sel).isEmpty()) {
+            Slot hotbarMenuSlot = findHotbarMenuSlot(screen, sel);
+            if (hotbarMenuSlot == null || hotbarMenuSlot.mayPickup(mc.player)) {
+                int emptyIdx = findEmptyHotbarSlot(mc, sel);
+                if (emptyIdx >= 0) {
+                    Slot emptyMenuSlot = findHotbarMenuSlot(screen, emptyIdx);
+                    if (emptyMenuSlot != null) {
+                        performHotbarStashThenPickup(mc, screen, hs, sel, emptyMenuSlot.index);
+                        playSwapSound(mc, config);
+                        SwapKeyState.closePendingTicks = closeDelay;
+                        SwapLog.debug("performSwap: hotbar priority — stashed held to slot {} → pick target idx={}",
+                                emptyIdx, hs.index);
+                        return true;
+                    }
+                }
+            }
+        }
+
         // Backpack mod: PICKUP direct for held hotbar slot
         if (!isVanillaInventory(screen) && isBackpackScreen(screen)) {
             Slot hotbarSlot = findHotbarMenuSlot(screen, sel);
@@ -475,5 +497,35 @@ public final class SwapEngine {
     static void playSwapSound(Minecraft mc, SwapConfigAdapter config) {
         if (!config.soundEnabled() || mc.player == null) return;
         mc.player.playNotifySound(SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.8f, 1.0f);
+    }
+
+    // ── Hotbar priority helpers ──
+
+    /** Find the first empty hotbar slot (0-8) excluding {@code exclude}. Returns -1 if none. */
+    private static int findEmptyHotbarSlot(Minecraft mc, int exclude) {
+        for (int i = 0; i < 9; i++) {
+            if (i != exclude && mc.player.getInventory().getItem(i).isEmpty()) return i;
+        }
+        return -1;
+    }
+
+    /**
+     * 4-step PICKUP: stash held item from {@code sel} → {@code emptyMenuIdx},
+     * then pick target item → {@code sel}.  All steps in the same tick,
+     * synchronous via {@code handleInventoryMouseClick}.
+     */
+    private static void performHotbarStashThenPickup(Minecraft mc, AbstractContainerScreen<?> screen,
+                                                      Slot targetSlot, int sel, int emptyMenuIdx) {
+        int cid = screen.getMenu().containerId;
+        Slot hotbarMenuSlot = findHotbarMenuSlot(screen, sel);
+        if (hotbarMenuSlot == null) return;
+
+        // Step 1-2: Stash held item from sel → empty hotbar slot
+        mc.gameMode.handleInventoryMouseClick(cid, hotbarMenuSlot.index, 0, ClickType.PICKUP, mc.player);
+        mc.gameMode.handleInventoryMouseClick(cid, emptyMenuIdx, 0, ClickType.PICKUP, mc.player);
+
+        // Step 3-4: Pick target item → sel
+        mc.gameMode.handleInventoryMouseClick(cid, targetSlot.index, 0, ClickType.PICKUP, mc.player);
+        mc.gameMode.handleInventoryMouseClick(cid, hotbarMenuSlot.index, 0, ClickType.PICKUP, mc.player);
     }
 }

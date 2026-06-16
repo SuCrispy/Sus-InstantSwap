@@ -21,6 +21,8 @@
   "config.susinstantswap.toastEnabled.tooltip": "Tampilkan peringatan, kesalahan, dan info di bilah aksi.",
   "config.susinstantswap.debug": "Log Debug",
   "config.susinstantswap.debug.tooltip": "Keluarkan informasi debug ke log permainan.",
+  "config.susinstantswap.hotbarPriorityEnabled": "Hotbar Priority",
+  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Put the swapped-out item into an empty hotbar slot first.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Tukar slot kosong dinonaktifkan, tidak dapat menukar dengan slot kosong",
   "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
   "toast.susinstantswap.item_not_placeable": "Item di tangan tidak dapat ditempatkan di slot ini",
