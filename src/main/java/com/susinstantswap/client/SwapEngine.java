@@ -369,6 +369,21 @@ public final class SwapEngine {
             return true;
         }
 
+        // Hotbar priority for creative inventory page (not the item-tab above).
+        // Stash the held item into an empty hotbar slot, then let the existing
+        // armor / SlotWrapper / hotbar-hotbar paths handle picking up the target.
+        if (config.hotbarPriorityEnabled() && hs.hasItem() && !handStack.isEmpty()) {
+            int emptyIdx = findEmptyHotbarSlot(mc, sel);
+            if (emptyIdx >= 0) {
+                safeSet(mc, emptyIdx, handStack.copy());
+                mc.gameMode.handleCreativeModeItemAdd(handStack.copy(), menuHotbarStart + emptyIdx);
+                safeSet(mc, sel, ItemStack.EMPTY);
+                mc.gameMode.handleCreativeModeItemAdd(ItemStack.EMPTY, heldIdx);
+                handStack = ItemStack.EMPTY;
+                SwapLog.debug("creativeSwap: hotbar priority — stashed held to slot {} before picking target", emptyIdx);
+            }
+        }
+
         int csi = hs.getContainerSlot();
         if (cs.isInventoryOpen() && (csi == 45 || (csi >= 5 && csi <= 8))) {
             if (!handStack.isEmpty() && !hs.mayPlace(handStack)) {
