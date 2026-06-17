@@ -90,6 +90,23 @@ public final class SwapEngine {
                 ItemStack hand = mc.player.getInventory().getItem(sel);
                 boolean canPlace = hand.isEmpty() || hs.mayPlace(hand);
                 if (canPickup && canPickupHotbar && canPlace) {
+                    // Hotbar priority: all validation passed — stash hand item to
+                    // empty hotbar slot first, then pick the target.
+                    if (config.hotbarPriorityEnabled() && hs.hasItem()
+                            && !mc.player.getInventory().getItem(sel).isEmpty()) {
+                        int emptyIdx = findEmptyHotbarSlot(mc, sel);
+                        if (emptyIdx >= 0) {
+                            Slot emptyMenuSlot = findHotbarMenuSlot(screen, emptyIdx);
+                            if (emptyMenuSlot != null) {
+                                performHotbarStashThenPickup(mc, screen, hs, sel, emptyMenuSlot.index);
+                                playSwapSound(mc, config);
+                                SwapKeyState.closePendingTicks = closeDelay;
+                                SwapLog.debug("performSwap: hotbar priority in backpack screen — stashed to slot {} → pick idx={}",
+                                        emptyIdx, hs.index);
+                                return true;
+                            }
+                        }
+                    }
                     performPickupExchange(mc, screen, hs, sel);
                     playSwapSound(mc, config);
                     SwapKeyState.closePendingTicks = closeDelay;
