@@ -81,28 +81,6 @@ public final class SwapEngine {
 
         int closeDelay = isVanillaInventory(screen) ? 1 : 2;
 
-        // Hotbar priority (universal pre-swap gate): if the hotbar has an empty
-        // slot, stash the held item there first, then pick the target into the hand.
-        // Applies to all containers (including backpack mods) except creative tabs.
-        if (config.hotbarPriorityEnabled()
-                && hs.hasItem() && !mc.player.getInventory().getItem(sel).isEmpty()) {
-            Slot hotbarMenuSlot = findHotbarMenuSlot(screen, sel);
-            if (hotbarMenuSlot == null || hotbarMenuSlot.mayPickup(mc.player)) {
-                int emptyIdx = findEmptyHotbarSlot(mc, sel);
-                if (emptyIdx >= 0) {
-                    Slot emptyMenuSlot = findHotbarMenuSlot(screen, emptyIdx);
-                    if (emptyMenuSlot != null) {
-                        performHotbarStashThenPickup(mc, screen, hs, sel, emptyMenuSlot.index);
-                        playSwapSound(mc, config);
-                        SwapKeyState.closePendingTicks = closeDelay;
-                        SwapLog.debug("performSwap: hotbar priority — stashed held to slot {} → pick target idx={}",
-                                emptyIdx, hs.index);
-                        return true;
-                    }
-                }
-            }
-        }
-
         // Backpack mod: PICKUP direct for held hotbar slot
         if (!isVanillaInventory(screen) && isBackpackScreen(screen)) {
             Slot hotbarSlot = findHotbarMenuSlot(screen, sel);
@@ -173,6 +151,24 @@ public final class SwapEngine {
             if (hs.hasItem() && !hs.mayPickup(mc.player)) {
                 if (!suppressToast) SwapToast.warn("toast.susinstantswap.item_not_placeable");
                 return false;
+            }
+        }
+
+        // Hotbar priority: all validation passed — if enabled and hotbar has an
+        // empty slot, stash the held item there first, then pick the target.
+        // Skipped during row swap (suppressToast=true) to avoid per-column
+        // interference.
+        if (!suppressToast && config.hotbarPriorityEnabled()
+                && hs.hasItem() && !hotbarStack.isEmpty()) {
+            int emptyIdx = findEmptyHotbarSlot(mc, hotbarIdx);
+            if (emptyIdx >= 0) {
+                Slot emptyMenuSlot = findHotbarMenuSlot(screen, emptyIdx);
+                if (emptyMenuSlot != null) {
+                    performHotbarStashThenPickup(mc, screen, hs, hotbarIdx, emptyMenuSlot.index);
+                    SwapLog.debug("swapSingleSlot: hotbar priority — stashed held to slot {} → pick target idx={}",
+                            emptyIdx, hs.index);
+                    return true;
+                }
             }
         }
 
