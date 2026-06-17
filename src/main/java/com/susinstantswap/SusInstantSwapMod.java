@@ -29,7 +29,7 @@ public class SusInstantSwapMod {
             modContainer.registerExtensionPoint(IConfigScreenFactory.class, (c, s) -> new ConfigurationScreen(c, s));
         modEventBus.register(this);
         InstantSwapClient.init(CONFIG);
-        SwapLog.info("v2.1.0 initialized");
+        SwapLog.info("v3.0.0 initialized");
     }
 
     @SubscribeEvent
