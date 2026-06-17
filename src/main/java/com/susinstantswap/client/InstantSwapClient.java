@@ -137,10 +137,10 @@ public class InstantSwapClient {
         if (!configLogged) {
             configLogged = true;
             SwapKeyState.refreshTargetKeys(mc.options.keyInventory.getKey());
-            SwapLog.info("Config: mod={} threshold={}ms sound={} guiSwap={} emptySwap={} rowSwap={} debug={} mouse={} toast={}",
+            SwapLog.info("Config: mod={} threshold={}ms sound={} guiSwap={} emptySwap={} rowSwap={} hotbarPri={} debug={} mouse={} toast={}",
                     config.modEnabled(), config.holdThresholdMs(), config.soundEnabled(),
                     config.guiSwapEnabled(), config.emptySlotSwapEnabled(),
-                    config.rowSwapEnabled(),
+                    config.rowSwapEnabled(), config.hotbarPriorityEnabled(),
                     config.debug(), config.mouseReposition(), config.toastEnabled());
         }
 
