@@ -61,7 +61,7 @@ public final class SwapEngine {
             return false;
         }
 
-        Slot hs = screen.getSlotUnderMouse();
+        Slot hs = ScreenAccess.getSlotUnderMouse(screen);
         if (hs == null || (!hs.hasItem() && !config.emptySlotSwapEnabled())) {
             if (hs != null && !hs.hasItem()) SwapToast.warn("toast.susinstantswap.empty_slot_swap_disabled");
             return false;
@@ -345,7 +345,7 @@ public final class SwapEngine {
     private static boolean creativeSwap(Minecraft mc, CreativeModeInventoryScreen cs,
                                         int sel, SwapConfigAdapter config) {
         if (mc.gameMode == null) return false;
-        Slot hs = cs.getSlotUnderMouse();
+        Slot hs = ScreenAccess.getSlotUnderMouse(cs);
         if (hs == null || (!hs.hasItem() && !config.emptySlotSwapEnabled())) return false;
 
         int hotbarSize = hotbarSize(mc);

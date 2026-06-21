@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Shared state between mixins and InstantSwapClient.
@@ -200,6 +201,9 @@ public final class SwapKeyState {
     /** Reflection-based access to KeyMapping.ALL (private field). Works across all platforms. */
     @SuppressWarnings("unchecked")
     private static Collection<KeyMapping> getAllKeyMappings() {
+        if (keyMappingsSupplier != null) {
+            return keyMappingsSupplier.get();
+        }
         try {
             Field f = KeyMapping.class.getDeclaredField("ALL");
             f.setAccessible(true);
@@ -207,5 +211,11 @@ public final class SwapKeyState {
         } catch (Exception e) {
             return Collections.emptyList();
         }
+    }
+
+    private static Supplier<Collection<KeyMapping>> keyMappingsSupplier;
+
+    public static void setKeyMappingsSupplier(Supplier<Collection<KeyMapping>> supplier) {
+        keyMappingsSupplier = supplier;
     }
 }

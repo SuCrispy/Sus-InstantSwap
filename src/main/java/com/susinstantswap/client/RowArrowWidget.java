@@ -54,8 +54,8 @@ public class RowArrowWidget {
     public static void detectRows(AbstractContainerScreen<?> screen, LocalPlayer player) {
         rowsDetected = false;
 
-        panelLeft  = screen.getGuiLeft();
-        int top    = screen.getGuiTop();
+        panelLeft  = ScreenAccess.getLeftPos(screen);
+        int top    = ScreenAccess.getTopPos(screen);
 
         // Standard detection: containerSlot [9,36) from player.getInventory()
         Map<Integer, Integer> slotToMenu = new HashMap<>();
