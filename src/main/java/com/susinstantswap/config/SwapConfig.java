@@ -2,13 +2,16 @@ package com.susinstantswap.config;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
 
-public class SwapConfig {
+public class SwapConfig implements SwapConfigAdapter {
     public final ModConfigSpec.BooleanValue modEnabled;
     public final ModConfigSpec.IntValue holdThresholdMs;
     public final ModConfigSpec.BooleanValue soundEnabled;
     public final ModConfigSpec.BooleanValue mouseReposition;
+    public final ModConfigSpec.BooleanValue hotbarPriorityEnabled;
     public final ModConfigSpec.BooleanValue guiSwapEnabled;
     public final ModConfigSpec.BooleanValue emptySlotSwapEnabled;
+    public final ModConfigSpec.BooleanValue rowSwapEnabled;
+    public final ModConfigSpec.BooleanValue toastEnabled;
     public final ModConfigSpec.BooleanValue debug;
 
     public SwapConfig(ModConfigSpec.Builder builder) {
@@ -20,12 +23,29 @@ public class SwapConfig {
         soundEnabled = builder.translation("config.susinstantswap.soundEnabled")
                 .comment("Swap Sound").define("soundEnabled", true);
         mouseReposition = builder.translation("config.susinstantswap.mouseReposition")
-                .comment("Auto-move cursor to bottom-right when container opens").define("mouseReposition", true);
+                .comment("Open container or inventory, the mouse will automatically move to the bottom-right corner").define("mouseReposition", true);
+        hotbarPriorityEnabled = builder.translation("config.susinstantswap.hotbarPriorityEnabled")
+                .comment("Before swapping, stash the held item into an empty hotbar slot first if available").define("hotbarPriorityEnabled", false);
         guiSwapEnabled = builder.translation("config.susinstantswap.guiSwapEnabled")
-                .comment("Press inventory key on a slot to swap and close").define("guiSwapEnabled", false);
+                .comment("In container screens, press the GUI swap key to directly swap items and close the screen").define("guiSwapEnabled", false);
         emptySlotSwapEnabled = builder.translation("config.susinstantswap.emptySlotSwapEnabled")
                 .comment("Also swap empty slots").define("emptySlotSwapEnabled", false);
+        rowSwapEnabled = builder.translation("config.susinstantswap.rowSwapEnabled")
+                .comment("In survival inventory, show arrow icons on the left to swap entire rows with the hotbar").define("rowSwapEnabled", true);
+        toastEnabled = builder.translation("config.susinstantswap.toastEnabled")
+                .comment("Show action bar toast messages (warnings, errors, info)").define("toastEnabled", true);
         debug = builder.translation("config.susinstantswap.debug")
                 .comment("Debug Logging").define("debug", false);
     }
+
+    @Override public boolean modEnabled()            { return modEnabled.get(); }
+    @Override public int     holdThresholdMs()        { return holdThresholdMs.get(); }
+    @Override public boolean soundEnabled()           { return soundEnabled.get(); }
+    @Override public boolean mouseReposition()        { return mouseReposition.get(); }
+    @Override public boolean hotbarPriorityEnabled()  { return hotbarPriorityEnabled.get(); }
+    @Override public boolean guiSwapEnabled()         { return guiSwapEnabled.get(); }
+    @Override public boolean emptySlotSwapEnabled()   { return emptySlotSwapEnabled.get(); }
+    @Override public boolean rowSwapEnabled()         { return rowSwapEnabled.get(); }
+    @Override public boolean toastEnabled()           { return toastEnabled.get(); }
+    @Override public boolean debug()                  { return debug.get(); }
 }

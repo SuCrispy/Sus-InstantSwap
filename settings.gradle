@@ -1,20 +1,9 @@
 pluginManagement {
     repositories {
-        maven {
-            name = "NeoForge Mirror"
-            url = "https://neoforged.forgecdn.net/releases/"
-        }
-        maven {
-            name = "Tencent Mirror"
-            url = "https://mirrors.cloud.tencent.com/nexus/repository/maven-public/"
-        }
-        maven {
-            name = "NeoForge Official"
-            url = "https://maven.neoforged.net/releases/"
-        }
+        maven { url = "https://maven.neoforged.net/releases/" }
+        maven { url = "https://mirrors.cloud.tencent.com/nexus/repository/maven-public/" }
         gradlePluginPortal()
-        mavenCentral()
     }
 }
 
-rootProject.name = 'Sus_InstantSwap_NF26.1'
+rootProject.name = 'Sus_InstantSwap'

@@ -4,10 +4,11 @@ license="LGPL-3.0"
 
 [[mods]]
 modId="susinstantswap"
-version="2.0.1"
+version="3.0.0"
 displayName="Su's Instant Swap"
+logoFile="assets/susinstantswap/icon.png"
 authors="Su_Crispy"
-description="Hold the inventory key to swap items with your hotbar. Coexists with vanilla — short press toggles inventory, long press swaps. Works in all container screens."
+description="Hold the inventory key to swap items with your hotbar. Coexists with vanilla."
 
 [[mixins]]
 config="susinstantswap.mixins.json"
@@ -15,7 +16,7 @@ config="susinstantswap.mixins.json"
 [[dependencies.susinstantswap]]
 modId="neoforge"
 type="required"
-versionRange="[26.1,26.2)"
+versionRange="[26.1,27)"
 ordering="NONE"
 side="CLIENT"
 

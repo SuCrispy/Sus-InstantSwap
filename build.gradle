@@ -3,15 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.141'
 }
 
-base {
-    archivesName = 'Sus_InstantSwap-2.0.1-NF26.1'
-}
-
-repositories {
-    maven { name = "NeoForge Mirror"; url = "https://neoforged.forgecdn.net/releases/" }
-    maven { name = "Tencent Mirror"; url = "https://mirrors.cloud.tencent.com/nexus/repository/maven-public/" }
-    mavenCentral()
-}
+base { archivesName = 'Sus_InstantSwap-3.0.0-NF26.1' }
 
 java {
     toolchain { languageVersion = JavaLanguageVersion.of(25) }
