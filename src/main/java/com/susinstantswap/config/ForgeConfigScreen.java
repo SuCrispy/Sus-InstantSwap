@@ -1,23 +1,17 @@
 package com.susinstantswap.config;
 
-import com.susinstantswap.SusInstantSwapMod;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
-/**
- * Forge native config screen using vanilla widgets only.
- */
-public class ForgeConfigScreen extends Screen {
+import com.susinstantswap.SusInstantSwapMod;
 
+public class ForgeConfigScreen extends Screen {
     private final Screen parent;
-    private static final int BUTTON_WIDTH = 200;
-    private static final int SLIDER_WIDTH = 200;
-    private static final int WIDGET_HEIGHT = 20;
-    private static final int SPACING = 24;
+    private net.minecraft.client.gui.components.AbstractSliderButton thresholdSlider;
 
     public ForgeConfigScreen(Screen parent) {
         super(Component.translatable("config.susinstantswap.title"));
@@ -26,97 +20,77 @@ public class ForgeConfigScreen extends Screen {
 
     @Override
     protected void init() {
-        int centerX = this.width / 2;
         int y = 40;
+        int leftCol = this.width / 2 - 155;
+        int rightCol = this.width / 2 + 5;
 
-        addRenderableWidget(createToggle(centerX, y,
-                "config.susinstantswap.modEnabled", () -> SwapConfig.modEnabledRuntime,
-                v -> SwapConfig.modEnabledRuntime = v));
-        y += SPACING;
+        this.addRenderableWidget(CycleButton.onOffBuilder(SusInstantSwapMod.CONFIG.modEnabled.get())
+                .create(leftCol, y, 150, 20, Component.translatable("config.susinstantswap.modEnabled"),
+                        (b, v) -> SusInstantSwapMod.CONFIG.modEnabled.set(v)));
+        this.addRenderableWidget(CycleButton.onOffBuilder(SusInstantSwapMod.CONFIG.soundEnabled.get())
+                .create(rightCol, y, 150, 20, Component.translatable("config.susinstantswap.soundEnabled"),
+                        (b, v) -> SusInstantSwapMod.CONFIG.soundEnabled.set(v)));
+        y += 24;
 
-        addRenderableWidget(new HoldThresholdSlider(centerX - SLIDER_WIDTH / 2, y, SLIDER_WIDTH, WIDGET_HEIGHT));
-        y += SPACING;
+        this.addRenderableWidget(CycleButton.onOffBuilder(SusInstantSwapMod.CONFIG.mouseReposition.get())
+                .create(leftCol, y, 150, 20, Component.translatable("config.susinstantswap.mouseReposition"),
+                        (b, v) -> SusInstantSwapMod.CONFIG.mouseReposition.set(v)));
+        this.addRenderableWidget(CycleButton.onOffBuilder(SusInstantSwapMod.CONFIG.rowSwapEnabled.get())
+                .create(rightCol, y, 150, 20, Component.translatable("config.susinstantswap.rowSwapEnabled"),
+                        (b, v) -> SusInstantSwapMod.CONFIG.rowSwapEnabled.set(v)));
+        y += 24;
 
-        addRenderableWidget(createToggle(centerX, y,
-                "config.susinstantswap.soundEnabled", () -> SwapConfig.soundEnabledRuntime,
-                v -> SwapConfig.soundEnabledRuntime = v));
-        y += SPACING;
+        // Threshold slider (50-1000ms)
+        int currentMs = SusInstantSwapMod.CONFIG.holdThresholdMs.get();
+        this.thresholdSlider = new net.minecraft.client.gui.components.AbstractSliderButton(
+                leftCol, y, 150, 20,
+                Component.translatable("config.susinstantswap.holdThresholdMs", currentMs),
+                (double)(currentMs - 50) / 950.0) {
+            @Override
+            protected void updateMessage() {
+                setMessage(Component.translatable("config.susinstantswap.holdThresholdMs",
+                        (int)(this.value * 950 + 50)));
+            }
+            @Override
+            protected void applyValue() {
+                SusInstantSwapMod.CONFIG.holdThresholdMs.set((int)(this.value * 950 + 50));
+            }
+        };
+        this.addRenderableWidget(thresholdSlider);
+        this.addRenderableWidget(CycleButton.onOffBuilder(SusInstantSwapMod.CONFIG.guiSwapEnabled.get())
+                .create(rightCol, y, 150, 20, Component.translatable("config.susinstantswap.guiSwapEnabled"),
+                        (b, v) -> SusInstantSwapMod.CONFIG.guiSwapEnabled.set(v)));
+        y += 24;
 
-        addRenderableWidget(createToggle(centerX, y,
-                "config.susinstantswap.mouseReposition", () -> SwapConfig.mouseRepositionRuntime,
-                v -> SwapConfig.mouseRepositionRuntime = v));
-        y += SPACING;
+        this.addRenderableWidget(CycleButton.onOffBuilder(SusInstantSwapMod.CONFIG.emptySlotSwapEnabled.get())
+                .create(leftCol, y, 150, 20, Component.translatable("config.susinstantswap.emptySlotSwapEnabled"),
+                        (b, v) -> SusInstantSwapMod.CONFIG.emptySlotSwapEnabled.set(v)));
+        this.addRenderableWidget(CycleButton.onOffBuilder(SusInstantSwapMod.CONFIG.hotbarPriorityEnabled.get())
+                .create(rightCol, y, 150, 20, Component.translatable("config.susinstantswap.hotbarPriorityEnabled"),
+                        (b, v) -> SusInstantSwapMod.CONFIG.hotbarPriorityEnabled.set(v)));
+        y += 24;
 
-        addRenderableWidget(createToggle(centerX, y,
-                "config.susinstantswap.guiSwapEnabled", () -> SwapConfig.guiSwapEnabledRuntime,
-                v -> SwapConfig.guiSwapEnabledRuntime = v));
-        y += SPACING;
+        this.addRenderableWidget(CycleButton.onOffBuilder(SusInstantSwapMod.CONFIG.toastEnabled.get())
+                .create(leftCol, y, 150, 20, Component.translatable("config.susinstantswap.toastEnabled"),
+                        (b, v) -> SusInstantSwapMod.CONFIG.toastEnabled.set(v)));
+        this.addRenderableWidget(CycleButton.onOffBuilder(SusInstantSwapMod.CONFIG.debug.get())
+                .create(rightCol, y, 150, 20, Component.translatable("config.susinstantswap.debug"),
+                        (b, v) -> SusInstantSwapMod.CONFIG.debug.set(v)));
+        y += 30;
 
-        addRenderableWidget(createToggle(centerX, y,
-                "config.susinstantswap.emptySlotSwapEnabled", () -> SwapConfig.emptySlotSwapEnabledRuntime,
-                v -> SwapConfig.emptySlotSwapEnabledRuntime = v));
-        y += SPACING;
-
-        addRenderableWidget(createToggle(centerX, y,
-                "config.susinstantswap.debug", () -> SwapConfig.debugRuntime,
-                v -> SwapConfig.debugRuntime = v));
-        y += SPACING;
-
-        y += 12;
-        addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, btn -> saveAndClose())
-                .pos(centerX - 50, y).size(100, WIDGET_HEIGHT).build());
-    }
-
-    private Button createToggle(int centerX, int y, String key, java.util.function.BooleanSupplier getter, java.util.function.Consumer<Boolean> setter) {
-        Component label = Component.translatable(key);
-        boolean init = getter.getAsBoolean();
-        return Button.builder(makeToggleLabel(label, init), btn -> {
-                    boolean v = !getter.getAsBoolean();
-                    setter.accept(v);
-                    btn.setMessage(makeToggleLabel(label, v));
-                })
-                .pos(centerX - BUTTON_WIDTH / 2, y).size(BUTTON_WIDTH, WIDGET_HEIGHT).build();
-    }
-
-    private Component makeToggleLabel(Component label, boolean on) {
-        return Component.literal(on ? "\u00a7a\u2714 " : "\u00a7c\u2718 ").append(label);
-    }
-
-    private void saveAndClose() {
-        SusInstantSwapMod.CONFIG.syncToSpec();
-        SusInstantSwapMod.CONFIG_SPEC.save();
-        if (minecraft != null) minecraft.setScreen(parent);
+        this.addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> this.onClose())
+                .bounds(this.width / 2 - 100, y, 200, 20).build());
     }
 
     @Override
-    public void render(GuiGraphics gui, int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground(gui, mouseX, mouseY, partialTicks);
-        gui.drawCenteredString(this.font, this.title, this.width / 2, 15, 0xFFFFFF);
-        super.render(gui, mouseX, mouseY, partialTicks);
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        this.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
+        guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 15, 0xFFFFFF);
+        super.render(guiGraphics, mouseX, mouseY, partialTick);
     }
 
     @Override
     public void onClose() {
-        saveAndClose();
-    }
-
-    private static class HoldThresholdSlider extends AbstractSliderButton {
-        private static final int MIN = 50, MAX = 1000;
-
-        HoldThresholdSlider(int x, int y, int width, int height) {
-            super(x, y, width, height, Component.empty(),
-                    (SwapConfig.holdThresholdMsRuntime - MIN) / (double)(MAX - MIN));
-            updateMessage();
-        }
-
-        @Override
-        protected void updateMessage() {
-            int val = MIN + (int)Math.round(value * (MAX - MIN));
-            SwapConfig.holdThresholdMsRuntime = val;
-            setMessage(Component.translatable("config.susinstantswap.holdThresholdMs.value", val));
-        }
-
-        @Override
-        protected void applyValue() {}
+        if (this.minecraft != null) this.minecraft.setScreen(parent);
     }
 }
