@@ -3,8 +3,11 @@ package com.susinstantswap.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.susinstantswap.SwapLog;
 import com.susinstantswap.config.SwapConfigAdapter;
+import com.susinstantswap.mixin.KeyMappingAccessor;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+// TODO[Fabric 26.1]: verify KeyBindingHelper package. The v1 package
+// (net.fabricmc.fabric.api.client.keybinding.v1) may have moved in Fabric API
+// 0.145 for MC 26.1; using the non-versioned package as the candidate path.
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
@@ -47,8 +50,8 @@ public class InstantSwapClient {
         SwapKeyState.setConfig(cfg);
         SWAP_IN_GUI_KEY = new KeyMapping("key.susinstantswap.swap_in_gui",
                 InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT,
-                "key.categories.susinstantswap");
-        KeyBindingHelper.registerKeyBinding(SWAP_IN_GUI_KEY);
+                KeyMapping.Category.MISC);
+        // MC 26.1: KeyMapping constructor auto-registers via ALL.put(); no KeyBindingHelper needed
 
         ClientTickEvents.END_CLIENT_TICK.register(InstantSwapClient::onClientTick);
         ScreenEvents.AFTER_INIT.register(InstantSwapClient::onScreenInitPost);
@@ -98,7 +101,7 @@ public class InstantSwapClient {
 
         if (!configLogged) {
             configLogged = true;
-            SwapKeyState.refreshTargetKeys(mc.options.keyInventory.getKey());
+            SwapKeyState.refreshTargetKeys(((KeyMappingAccessor) mc.options.keyInventory).getKey());
             SwapLog.info("Config: mod={} threshold={}ms sound={} guiSwap={} emptySwap={} rowSwap={} hotbarPri={} debug={} mouse={} toast={}",
                     config.modEnabled(), config.holdThresholdMs(), config.soundEnabled(),
                     config.guiSwapEnabled(), config.emptySlotSwapEnabled(),
@@ -106,7 +109,7 @@ public class InstantSwapClient {
                     config.debug(), config.mouseReposition(), config.toastEnabled());
         }
 
-        SwapKeyState.checkForKeyRebind(mc.options.keyInventory.getKey());
+        SwapKeyState.checkForKeyRebind(((KeyMappingAccessor) mc.options.keyInventory).getKey());
         SwapKeyState.modEnabled = config.modEnabled();
         if (!SwapKeyState.modEnabled) return;
 
@@ -181,7 +184,7 @@ public class InstantSwapClient {
     // ── Key binding accessors ──
 
     public static InputConstants.Key getGuiSwapKey() {
-        return SWAP_IN_GUI_KEY != null ? SWAP_IN_GUI_KEY.getKey() : null;
+        return SWAP_IN_GUI_KEY != null ? ((KeyMappingAccessor) SWAP_IN_GUI_KEY).getKey() : null;
     }
 
     public static boolean isGuiSwapKeyUnbound() {
@@ -191,7 +194,7 @@ public class InstantSwapClient {
     // ── Private helpers ──
 
     private static boolean isAnyTargetKeyPhysicallyDown(Minecraft mc) {
-        long window = mc.getWindow().getWindow();
+        long window = mc.getWindow().handle();
         for (InputConstants.Key key : SwapKeyState.getTargetKeys()) {
             if (key.getType() == InputConstants.Type.KEYSYM
                     && GLFW.glfwGetKey(window, key.getValue()) == GLFW.GLFW_PRESS) {
@@ -203,8 +206,8 @@ public class InstantSwapClient {
 
     private static boolean isGuiSwapKeyPhysicallyDown(Minecraft mc) {
         if (SWAP_IN_GUI_KEY.isUnbound()) return false;
-        InputConstants.Key bk = SWAP_IN_GUI_KEY.getKey();
-        long window = mc.getWindow().getWindow();
+        InputConstants.Key bk = ((KeyMappingAccessor) SWAP_IN_GUI_KEY).getKey();
+        long window = mc.getWindow().handle();
         return bk.getType() == InputConstants.Type.KEYSYM
                 && GLFW.glfwGetKey(window, bk.getValue()) == GLFW.GLFW_PRESS;
     }
@@ -216,10 +219,10 @@ public class InstantSwapClient {
 
     private static void positionCursorToUIBottomRight(AbstractContainerScreen<?> s) {
         Minecraft mc = Minecraft.getInstance();
-        long h = mc.getWindow().getWindow();
+        long h = mc.getWindow().handle();
         double gs = mc.getWindow().getGuiScale();
-        int targetX = (int) ((s.getGuiLeft() + s.getXSize()) * gs) - 5;
-        int targetY = (int) ((s.getGuiTop() + s.getYSize()) * gs) - 5;
+        int targetX = (int) ((ScreenAccess.getLeftPos(s) + ScreenAccess.getImageWidth(s)) * gs) - 5;
+        int targetY = (int) ((ScreenAccess.getTopPos(s) + ScreenAccess.getImageHeight(s)) * gs) - 5;
 
         MouseHandler mh = mc.mouseHandler;
         try {

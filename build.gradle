@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version "${loom_version}"
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
     id 'maven-publish'
 }
 
@@ -31,7 +31,7 @@ dependencies {
     implementation "maven.modrinth:modmenu:${project.modmenu_version}"
 }
 
-processClientResources {
+processResources {
     def version = project.version
     inputs.property "version", version
     filesMatching("fabric.mod.json") {
@@ -55,10 +55,6 @@ jar {
     from("LICENSE") {
         rename { "${it}_Sus_InstantSwap" }
     }
-}
-
-remapJar {
-    archiveVersion = ''
 }
 
 publishing {
