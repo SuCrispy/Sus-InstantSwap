@@ -21,10 +21,10 @@
   "config.susinstantswap.toastEnabled.tooltip": "Visa varningar, fel och information i actionbaren.",
   "config.susinstantswap.debug": "Felsökningslogg",
   "config.susinstantswap.debug.tooltip": "Skriv ut felsökningsinformation i spelloggen.",
-  "config.susinstantswap.hotbarPriorityEnabled": "Hotbar Priority",
-  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Put the swapped-out item into an empty hotbar slot first.",
+  "config.susinstantswap.hotbarPriorityEnabled": "Snabbåtkomst-prioritet",
+  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Placera det utbytta föremålet i en tom snabbåtkomstplats först.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Byte av tomma platser är inaktiverat, kan inte byta med tom plats",
-  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
+  "toast.susinstantswap.item_in_use": "Nuvarande föremål kan inte bytas",
   "toast.susinstantswap.item_not_placeable": "Föremålet i handen kan inte placeras på denna plats",
-  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
+  "toast.susinstantswap.slot_locked": "Målplatsen kan inte bytas just nu"
 }

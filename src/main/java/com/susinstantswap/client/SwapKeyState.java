@@ -5,6 +5,8 @@ import com.susinstantswap.SwapLog;
 import com.susinstantswap.config.SwapConfigAdapter;
 import net.minecraft.client.KeyMapping;
 
+import java.lang.reflect.Field;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -56,11 +58,7 @@ public final class SwapKeyState {
             "key.travelersbackpack.inventory",
             "key.travelersbackpack.open_backpack",
 
-            // Omnis Backpack
-            "key.omnis_backpack",
-            "key.omnis_backpack.open",
-
-            // Backpacked
+            // Backpacked (MrCrayfish)
             "key.backpacked.open_backpack",
             "key.backpacked.backpack",
 
@@ -68,17 +66,21 @@ public final class SwapKeyState {
             "key.inmis.open_backpack",
             "key.inmis.backpack",
 
-            // Good Backpacks — modid "good_backpacks" (underscore)
-            "key.good_backpacks.open_backpack",
-            "key.goodbackpacks.open_backpack",
-
             // Resource Backpacks — modid "resource_backpacks" (underscore)
             "key.resource_backpacks.open_backpack",
             "key.resourcebackpacks.open_backpack",
 
-            // Iron Backpacks
-            "key.ironbackpacks.open_backpack",
-            "key.ironbackpacks.open",
+            // Packed Up — uses non-standard "packedup.keys." prefix
+            "packedup.keys.openbag",
+
+            // L2 Backpack
+            "key.l2backpack.open",
+
+            // Beans Backpacks (v1/v2/v3)
+            "key.beansbackpacks.action",
+            "key.beansbackpacks.inventory",
+            "key.beansbackpacks.instant",
+            "key.beansbackpacks.shorthand",
     };
 
     /**
@@ -127,21 +129,20 @@ public final class SwapKeyState {
         // Scan all registered key mappings for backpack-mod keys
         int backpackKeysFound = 0;
         try {
-            for (KeyMapping km : KeyMapping.ALL.values()) {
+            for (KeyMapping km : getAllKeyMappings()) {
                 String name = km.getName();
                 for (String pattern : BACKPACK_KEY_PATTERNS) {
                     if (name.equals(pattern)) {
-                        keys.add(km.getKey());
+                        keys.add(InputConstants.getKey(km.saveString()));
                         SwapLog.debug("SwapKeyState.refreshTargetKeys: found backpack key: {} -> {}",
-                                pattern, km.getKey().getName());
+                                pattern, InputConstants.getKey(km.saveString()).getName());
                         backpackKeysFound++;
                         break;
                     }
                 }
             }
         } catch (Exception e) {
-            SwapLog.warn("SwapKeyState.refreshTargetKeys: failed to scan KeyMapping.ALL: {}", e.toString());
-            // KeyMapping.ALL may not be accessible in some environments; fall back to inventory-only
+            SwapLog.warn("SwapKeyState.refreshTargetKeys: failed to scan key mappings: {}", e.toString());
         }
 
         targetKeys = Collections.unmodifiableSet(keys);
@@ -162,12 +163,12 @@ public final class SwapKeyState {
             refreshTargetKeys(currentInventoryKey);
             return;
         }
-        for (KeyMapping km : KeyMapping.ALL.values()) {
+        for (KeyMapping km : getAllKeyMappings()) {
             String name = km.getName();
             InputConstants.Key snapshot = trackedMappingSnapshot.get(name);
-            if (snapshot != null && !snapshot.equals(km.getKey())) {
+            if (snapshot != null && !snapshot.equals(InputConstants.getKey(km.saveString()))) {
                 SwapLog.info("checkForKeyRebind: key mapping '{}' changed from {} to {}, refreshing",
-                        name, snapshot.getName(), km.getKey().getName());
+                        name, snapshot.getName(), InputConstants.getKey(km.saveString()).getName());
                 refreshTargetKeys(currentInventoryKey);
                 return;
             }
@@ -176,10 +177,10 @@ public final class SwapKeyState {
 
     private static void saveSnapshot(InputConstants.Key inventoryKey) {
         trackedMappingSnapshot.clear();
-        for (KeyMapping km : KeyMapping.ALL.values()) {
+        for (KeyMapping km : getAllKeyMappings()) {
             for (String pattern : BACKPACK_KEY_PATTERNS) {
                 if (km.getName().equals(pattern)) {
-                    trackedMappingSnapshot.put(km.getName(), km.getKey());
+                    trackedMappingSnapshot.put(km.getName(), InputConstants.getKey(km.saveString()));
                     break;
                 }
             }
@@ -194,5 +195,17 @@ public final class SwapKeyState {
     /** Returns the current set of target keys (for physical-key polling). */
     public static Set<InputConstants.Key> getTargetKeys() {
         return targetKeys;
+    }
+
+    /** Reflection-based access to KeyMapping.ALL (private field). Works across all platforms. */
+    @SuppressWarnings("unchecked")
+    private static Collection<KeyMapping> getAllKeyMappings() {
+        try {
+            Field f = KeyMapping.class.getDeclaredField("ALL");
+            f.setAccessible(true);
+            return ((Map<String, KeyMapping>) f.get(null)).values();
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
     }
 }

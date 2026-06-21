@@ -15,6 +15,8 @@ import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
+import java.lang.reflect.Field;
+
 /**
  * Platform-independent core swap logic.
  * <p>
@@ -351,7 +353,7 @@ public final class SwapEngine {
         int heldIdx = menuHotbarStart + sel;
         ItemStack handStack = mc.player.getInventory().getItem(sel);
 
-        if (hs.container == CreativeModeInventoryScreen.CONTAINER) {
+        if (hs.container == getCreativeContainer()) {
             ItemStack held = handStack.copy();
             ItemStack item = hs.getItem().copyWithCount(1);
             if (!held.isEmpty()) {
@@ -406,8 +408,9 @@ public final class SwapEngine {
             return true;
         }
 
-        if (hs instanceof CreativeModeInventoryScreen.SlotWrapper w) {
-            int t = w.target.index;
+        Slot w = getSlotWrapperTarget(hs);
+        if (w != null) {
+            int t = w.index;
             if (isPlayerInventorySlot(w) && t != heldIdx) {
                 ItemStack ti = cs.getMenu().getSlot(t).getItem().copy();
                 ItemStack hi = cs.getMenu().getSlot(heldIdx).getItem().copy();
@@ -555,5 +558,52 @@ public final class SwapEngine {
         // Step 3-4: Pick target item → sel
         mc.gameMode.handleInventoryMouseClick(cid, targetSlot.index, 0, ClickType.PICKUP, mc.player);
         mc.gameMode.handleInventoryMouseClick(cid, hotbarMenuSlot.index, 0, ClickType.PICKUP, mc.player);
+    }
+
+    // ── Reflection helpers for creative inventory internals ──
+
+    private static Object cachedCreativeContainer;
+    private static boolean creativeContainerCached;
+
+    private static Object getCreativeContainer() {
+        if (!creativeContainerCached) {
+            creativeContainerCached = true;
+            try {
+                Field f = CreativeModeInventoryScreen.class.getDeclaredField("CONTAINER");
+                f.setAccessible(true);
+                cachedCreativeContainer = f.get(null);
+            } catch (Exception e) {
+                SwapLog.warn("Failed to access CreativeModeInventoryScreen.CONTAINER: {}", e.toString());
+            }
+        }
+        return cachedCreativeContainer;
+    }
+
+    private static final java.util.Map<Class<?>, Field> targetFieldCache = new java.util.HashMap<>();
+
+    private static Field findTargetField(Class<?> clz) {
+        return targetFieldCache.computeIfAbsent(clz, c -> {
+            for (Field f : c.getDeclaredFields()) {
+                if (f.getType() == Slot.class) {
+                    f.setAccessible(true);
+                    return f;
+                }
+            }
+            return null;
+        });
+    }
+
+    private static boolean isSlotWrapper(Slot slot) {
+        return slot.getClass() != Slot.class && findTargetField(slot.getClass()) != null;
+    }
+
+    private static Slot getSlotWrapperTarget(Slot slot) {
+        try {
+            Field f = findTargetField(slot.getClass());
+            if (f == null) return null;
+            return (Slot) f.get(slot);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

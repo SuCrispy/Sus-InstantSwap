@@ -21,10 +21,10 @@
   "config.susinstantswap.toastEnabled.tooltip": "Hiển thị cảnh báo, lỗi và thông tin trên thanh hành động.",
   "config.susinstantswap.debug": "Nhật Ký Gỡ Lỗi",
   "config.susinstantswap.debug.tooltip": "Xuất thông tin gỡ lỗi ra nhật ký trò chơi.",
-  "config.susinstantswap.hotbarPriorityEnabled": "Hotbar Priority",
-  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Put the swapped-out item into an empty hotbar slot first.",
+  "config.susinstantswap.hotbarPriorityEnabled": "Ưu tiên thanh nóng",
+  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Đặt vật phẩm bị hoán đổi vào ô trống của thanh nóng trước.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Trao đổi ô trống bị tắt, không thể trao đổi với ô trống",
-  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
+  "toast.susinstantswap.item_in_use": "Không thể hoán đổi vật phẩm hiện tại",
   "toast.susinstantswap.item_not_placeable": "Vật phẩm trên tay không thể đặt vào ô này",
-  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
+  "toast.susinstantswap.slot_locked": "Không thể hoán đổi ô mục tiêu lúc này"
 }

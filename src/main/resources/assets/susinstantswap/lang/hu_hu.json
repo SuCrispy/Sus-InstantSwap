@@ -21,10 +21,10 @@
   "config.susinstantswap.toastEnabled.tooltip": "Figyelmeztetések, hibák és információk megjelenítése a műveleti sávban.",
   "config.susinstantswap.debug": "Hibakeresési napló",
   "config.susinstantswap.debug.tooltip": "Hibakeresési információk kiírása a játéknaplóba.",
-  "config.susinstantswap.hotbarPriorityEnabled": "Hotbar Priority",
-  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Put the swapped-out item into an empty hotbar slot first.",
+  "config.susinstantswap.hotbarPriorityEnabled": "Gyorssáv-prioritás",
+  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "A kicserélt tárgyat először egy üres gyorssáv-helyre helyezi.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Üres helyek cseréje letiltva, nem lehet üres hellyel cserélni",
-  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
+  "toast.susinstantswap.item_in_use": "Az aktuális tárgy nem cserélhető",
   "toast.susinstantswap.item_not_placeable": "A kézben lévő tárgy nem helyezhető ebbe a helyre",
-  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
+  "toast.susinstantswap.slot_locked": "A célhely jelenleg nem cserélhető"
 }

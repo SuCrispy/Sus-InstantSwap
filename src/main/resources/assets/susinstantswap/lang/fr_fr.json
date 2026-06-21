@@ -21,10 +21,10 @@
   "config.susinstantswap.toastEnabled.tooltip": "Afficher les avertissements, erreurs et informations dans la barre d'action.",
   "config.susinstantswap.debug": "Journal de débogage",
   "config.susinstantswap.debug.tooltip": "Afficher les informations de débogage dans le journal du jeu.",
-  "config.susinstantswap.hotbarPriorityEnabled": "Hotbar Priority",
-  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Put the swapped-out item into an empty hotbar slot first.",
+  "config.susinstantswap.hotbarPriorityEnabled": "Priorité barre d'accès rapide",
+  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Place l'objet échangé dans un emplacement vide de la barre d'accès rapide en premier.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Échange emplacements vides désactivé, impossible d'échanger avec un emplacement vide",
-  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
+  "toast.susinstantswap.item_in_use": "L'objet actuel ne peut pas être échangé",
   "toast.susinstantswap.item_not_placeable": "L'objet en main ne peut pas être placé dans cet emplacement",
-  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
+  "toast.susinstantswap.slot_locked": "L'emplacement cible ne peut pas être échangé pour le moment"
 }

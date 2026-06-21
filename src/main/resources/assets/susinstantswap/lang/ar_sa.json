@@ -21,10 +21,10 @@
   "config.susinstantswap.toastEnabled.tooltip": "إظهار التحذيرات والأخطاء والمعلومات في شريط الإجراءات.",
   "config.susinstantswap.debug": "سجل التصحيح",
   "config.susinstantswap.debug.tooltip": "إخراج معلومات التصحيح إلى سجل اللعبة.",
-  "config.susinstantswap.hotbarPriorityEnabled": "Hotbar Priority",
-  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Put the swapped-out item into an empty hotbar slot first.",
+  "config.susinstantswap.hotbarPriorityEnabled": "أولوية شريط الاختصار",
+  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "ضع العنصر المُستبدل في خانة فارغة بشريط الاختصار أولاً.",
   "toast.susinstantswap.empty_slot_swap_disabled": "مبادلة الخانات الفارغة معطلة، لا يمكن المبادلة مع خانة فارغة",
-  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
+  "toast.susinstantswap.item_in_use": "لا يمكن تبديل العنصر الحالي",
   "toast.susinstantswap.item_not_placeable": "لا يمكن وضع العنصر في اليد في هذه الخانة",
-  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
+  "toast.susinstantswap.slot_locked": "لا يمكن تبديل الخانة المستهدفة الآن"
 }

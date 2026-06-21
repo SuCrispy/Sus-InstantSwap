@@ -21,10 +21,10 @@
   "config.susinstantswap.toastEnabled.tooltip": "Zobrazovat varování, chyby a informace v akčním řádku.",
   "config.susinstantswap.debug": "Ladicí protokol",
   "config.susinstantswap.debug.tooltip": "Vypisovat ladicí informace do herního protokolu.",
-  "config.susinstantswap.hotbarPriorityEnabled": "Hotbar Priority",
-  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Put the swapped-out item into an empty hotbar slot first.",
+  "config.susinstantswap.hotbarPriorityEnabled": "Priorita lišty",
+  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Vyměněný předmět se přednostně umístí do prázdného slotu lišty.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Výměna prázdných slotů je zakázána, nelze vyměnit s prázdným slotem",
-  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
+  "toast.susinstantswap.item_in_use": "Aktuální předmět nelze vyměnit",
   "toast.susinstantswap.item_not_placeable": "Předmět v ruce nelze umístit do tohoto slotu",
-  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
+  "toast.susinstantswap.slot_locked": "Cílový slot momentálně nelze vyměnit"
 }

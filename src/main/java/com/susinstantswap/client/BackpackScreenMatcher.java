@@ -16,12 +16,12 @@ public final class BackpackScreenMatcher {
             "sophisticated",          // Sophisticated Backpacks / Core
             "flanks255",              // Simply Backpacks (SBGui)
             "BackpackScreen",         // Traveller's Backpack
-            "omnis",                  // Omnis Backpack
-            "backpacked",             // Backpacked
+            "backpacked",             // Backpacked (MrCrayfish)
             "inmis",                  // Inmis Backpack
-            "goodbackpacks",          // Good Backpacks
             "resource_backpacks",     // Resource Backpacks
-            "ironbackpacks",          // Iron Backpacks
+            "packedup",               // Packed Up (SuperMartijn642)
+            "l2backpack",             // L2 Backpack (LightLand)
+            "beansgalaxy",            // Beans Backpacks (v1/v2/v3)
     };
 
     /** Returns true if the screen belongs to a known backpack mod. */

@@ -21,10 +21,10 @@
   "config.susinstantswap.toastEnabled.tooltip": "Показувати попередження, помилки та інформацію в action bar.",
   "config.susinstantswap.debug": "Журнал налагодження",
   "config.susinstantswap.debug.tooltip": "Виводити інформацію налагодження в ігровий журнал.",
-  "config.susinstantswap.hotbarPriorityEnabled": "Hotbar Priority",
-  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Put the swapped-out item into an empty hotbar slot first.",
+  "config.susinstantswap.hotbarPriorityEnabled": "Пріоритет хотбара",
+  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Обміняний предмет спершу розміщується в порожньому слоті хотбара.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Обмін порожніх слотів вимкнено, неможливо обміняти з порожнім слотом",
-  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
+  "toast.susinstantswap.item_in_use": "Поточний предмет не можна обміняти",
   "toast.susinstantswap.item_not_placeable": "Предмет у руці не можна помістити в цей слот",
-  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
+  "toast.susinstantswap.slot_locked": "Цільовий слот зараз не можна обміняти"
 }

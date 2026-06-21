@@ -21,10 +21,10 @@
   "config.susinstantswap.toastEnabled.tooltip": "Toon waarschuwingen, fouten en informatie in de actiebalk.",
   "config.susinstantswap.debug": "Debug-logboek",
   "config.susinstantswap.debug.tooltip": "Geef debug-informatie weer in het spellogboek.",
-  "config.susinstantswap.hotbarPriorityEnabled": "Hotbar Priority",
-  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Put the swapped-out item into an empty hotbar slot first.",
+  "config.susinstantswap.hotbarPriorityEnabled": "Hotbar-prioriteit",
+  "config.susinstantswap.hotbarPriorityEnabled.tooltip": "Plaats het verwisselde item eerst in een lege hotbar-plek.",
   "toast.susinstantswap.empty_slot_swap_disabled": "Wisselen lege plekken uitgeschakeld, kan niet wisselen met lege plek",
-  "toast.susinstantswap.item_in_use": "Current item cannot be swapped",
+  "toast.susinstantswap.item_in_use": "Huidig item kan niet worden verwisseld",
   "toast.susinstantswap.item_not_placeable": "Item in de hand kan niet op deze plek worden geplaatst",
-  "toast.susinstantswap.slot_locked": "Target slot cannot be swapped right now"
+  "toast.susinstantswap.slot_locked": "Doelplek kan nu niet worden verwisseld"
 }
