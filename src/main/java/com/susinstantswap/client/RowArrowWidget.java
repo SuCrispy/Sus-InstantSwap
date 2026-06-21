@@ -9,7 +9,7 @@ import java.util.Map;
 import com.susinstantswap.config.SwapConfigAdapter;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -161,7 +161,7 @@ public class RowArrowWidget {
         }
     }
 
-    public static void render(Minecraft mc, GuiGraphics g) {
+    public static void render(Minecraft mc, GuiGraphicsExtractor g) {
         if (!visible || !rowsDetected) return;
         for (int r = 0; r < ROW_COUNT; r++) {
             boolean hovered = (hoveredRow == r);

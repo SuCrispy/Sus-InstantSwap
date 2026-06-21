@@ -6,7 +6,7 @@ import com.susinstantswap.client.SwapKeyState;
 import com.susinstantswap.config.SwapConfigAdapter;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,9 +17,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = AbstractContainerScreen.class, remap = false)
 public class ContainerScreenMixin {
 
-    @Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V",
+    @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V",
             at = @At("TAIL"))
-    private void onRender(GuiGraphics guiGraphics, int mouseX, int mouseY,
+    private void onRender(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY,
                           float partialTick, CallbackInfo ci) {
         if (!SwapKeyState.modEnabled) return;
 
@@ -41,8 +41,8 @@ public class ContainerScreenMixin {
         RowArrowWidget.visible = true;
         RowArrowWidget.checkHover(mouseX, mouseY);
 
-        guiGraphics.pose().pushPose();
+        guiGraphics.pose().pushMatrix();
         RowArrowWidget.render(mc, guiGraphics);
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().popMatrix();
     }
 }

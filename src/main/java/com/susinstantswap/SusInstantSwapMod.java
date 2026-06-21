@@ -2,9 +2,8 @@ package com.susinstantswap;
 
 import com.susinstantswap.client.InstantSwapClient;
 import com.susinstantswap.config.SwapConfig;
-import net.minecraftforge.client.ConfigScreenHandler;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
@@ -24,15 +23,21 @@ public class SusInstantSwapMod {
 
         context.registerConfig(ModConfig.Type.CLIENT, CONFIG_SPEC);
 
+        // Config screen disabled for Forge 26.1 (needs API updates)
         ModLoadingContext.get().registerExtensionPoint(
-                ConfigScreenHandler.ConfigScreenFactory.class,
-                () -> new ConfigScreenHandler.ConfigScreenFactory(
+                net.minecraftforge.client.ConfigScreenHandler.ConfigScreenFactory.class,
+                () -> new net.minecraftforge.client.ConfigScreenHandler.ConfigScreenFactory(
                         (mc, screen) -> null
                 )
         );
 
-        RegisterKeyMappingsEvent.BUS.addListener(InstantSwapClient::registerKey);
+        // FML 26.1 auto-registers @Mod class methods with @SubscribeEvent
         InstantSwapClient.init(CONFIG);
         SwapLog.info("v3.0.0 initialized (Forge 26.1)");
+    }
+
+    @SubscribeEvent
+    public void onRegisterKeyMappings(net.minecraftforge.client.event.RegisterKeyMappingsEvent event) {
+        InstantSwapClient.registerKey(event);
     }
 }

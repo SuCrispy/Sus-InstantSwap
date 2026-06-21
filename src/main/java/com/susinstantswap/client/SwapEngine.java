@@ -11,7 +11,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
@@ -67,7 +67,7 @@ public final class SwapEngine {
             return false;
         }
 
-        int sel = mc.player.getInventory().selected;
+        int sel = mc.player.getInventory().getSelectedSlot();
 
         if (isPlayerInventorySlot(hs) && hs.getContainerSlot() == sel) return false;
         if (!hs.hasItem() && mc.player.getInventory().getItem(sel).isEmpty()) return false;
@@ -206,15 +206,15 @@ public final class SwapEngine {
         boolean hotbarHasItem = hotbarMenuSlot.hasItem();
 
         if (containerHasItem && !hotbarHasItem) {
-            mc.gameMode.handleInventoryMouseClick(cid, containerSlot.index, 0, ClickType.PICKUP, mc.player);
-            mc.gameMode.handleInventoryMouseClick(cid, hotbarMenuSlot.index, 0, ClickType.PICKUP, mc.player);
+            mc.gameMode.handleContainerInput(cid, containerSlot.index, 0, ContainerInput.PICKUP, mc.player);
+            mc.gameMode.handleContainerInput(cid, hotbarMenuSlot.index, 0, ContainerInput.PICKUP, mc.player);
         } else if (!containerHasItem && hotbarHasItem) {
-            mc.gameMode.handleInventoryMouseClick(cid, hotbarMenuSlot.index, 0, ClickType.PICKUP, mc.player);
-            mc.gameMode.handleInventoryMouseClick(cid, containerSlot.index, 0, ClickType.PICKUP, mc.player);
+            mc.gameMode.handleContainerInput(cid, hotbarMenuSlot.index, 0, ContainerInput.PICKUP, mc.player);
+            mc.gameMode.handleContainerInput(cid, containerSlot.index, 0, ContainerInput.PICKUP, mc.player);
         } else if (containerHasItem && hotbarHasItem) {
-            mc.gameMode.handleInventoryMouseClick(cid, containerSlot.index, 0, ClickType.PICKUP, mc.player);
-            mc.gameMode.handleInventoryMouseClick(cid, hotbarMenuSlot.index, 0, ClickType.PICKUP, mc.player);
-            mc.gameMode.handleInventoryMouseClick(cid, containerSlot.index, 0, ClickType.PICKUP, mc.player);
+            mc.gameMode.handleContainerInput(cid, containerSlot.index, 0, ContainerInput.PICKUP, mc.player);
+            mc.gameMode.handleContainerInput(cid, hotbarMenuSlot.index, 0, ContainerInput.PICKUP, mc.player);
+            mc.gameMode.handleContainerInput(cid, containerSlot.index, 0, ContainerInput.PICKUP, mc.player);
         }
     }
 
@@ -271,8 +271,8 @@ public final class SwapEngine {
         Slot hSlot = findHotbarMenuSlot(s, hotbar);
         if (hSlot != null && hSlot.hasItem() && !hSlot.mayPickup(mc.player)) return false;
 
-        mc.gameMode.handleInventoryMouseClick(
-                s.getMenu().containerId, slotIdx, hotbar, ClickType.SWAP, mc.player);
+        mc.gameMode.handleContainerInput(
+                s.getMenu().containerId, slotIdx, hotbar, ContainerInput.SWAP, mc.player);
         return true;
     }
 
@@ -281,7 +281,7 @@ public final class SwapEngine {
     static boolean performRowSwap(Minecraft mc, AbstractContainerScreen<?> screen,
                                   SwapConfigAdapter config) {
         int row = RowArrowWidget.hoveredRow;
-        int sel = mc.player.getInventory().selected;
+        int sel = mc.player.getInventory().getSelectedSlot();
 
         SwapLog.debug("performRowSwap ENTER: row={} creative={} sel={}", row, mc.player.isCreative(), sel);
 
@@ -358,13 +358,13 @@ public final class SwapEngine {
             ItemStack item = hs.getItem().copyWithCount(1);
             if (!held.isEmpty()) {
                 int f = freeSlot(mc);
-                if (f >= 0 && f < mc.player.getInventory().items.size()) {
-                    mc.player.getInventory().items.set(f, held.copy());
+                if (f >= 0 && f < mc.player.getInventory().getNonEquipmentItems().size()) {
+                    mc.player.getInventory().getNonEquipmentItems().set(f, held.copy());
                     mc.gameMode.handleCreativeModeItemAdd(held.copy(), menuHotbarStart + f);
                 }
             }
-            if (sel < mc.player.getInventory().items.size()) {
-                mc.player.getInventory().items.set(sel, item);
+            if (sel < mc.player.getInventory().getNonEquipmentItems().size()) {
+                mc.player.getInventory().getNonEquipmentItems().set(sel, item);
                 mc.gameMode.handleCreativeModeItemAdd(item, heldIdx);
             }
             SwapKeyState.closePendingTicks = 1;
@@ -402,8 +402,8 @@ public final class SwapEngine {
                     return false;
                 }
             }
-            mc.gameMode.handleInventoryMouseClick(
-                cs.getMenu().containerId, csi, sel, ClickType.SWAP, mc.player);
+            mc.gameMode.handleContainerInput(
+                cs.getMenu().containerId, csi, sel, ContainerInput.SWAP, mc.player);
             SwapKeyState.closePendingTicks = 1;
             return true;
         }
@@ -506,28 +506,28 @@ public final class SwapEngine {
     }
 
     static int hotbarSize(Minecraft mc) {
-        return mc.player.getInventory().items.size() - 27;
+        return mc.player.getInventory().getNonEquipmentItems().size() - 27;
     }
 
     static int freeSlot(Minecraft mc) {
-        int size = mc.player.getInventory().items.size();
+        int size = mc.player.getInventory().getNonEquipmentItems().size();
         int hbSize = hotbarSize(mc);
-        int sel = mc.player.getInventory().selected;
+        int sel = mc.player.getInventory().getSelectedSlot();
         for (int i = 0; i < hbSize; i++)
-            if (i != sel && mc.player.getInventory().items.get(i).isEmpty()) return i;
+            if (i != sel && mc.player.getInventory().getNonEquipmentItems().get(i).isEmpty()) return i;
         for (int i = hbSize; i < size; i++)
-            if (mc.player.getInventory().items.get(i).isEmpty()) return i;
+            if (mc.player.getInventory().getNonEquipmentItems().get(i).isEmpty()) return i;
         return -1;
     }
 
     private static void safeSet(Minecraft mc, int idx, ItemStack stack) {
-        if (idx >= 0 && idx < mc.player.getInventory().items.size())
-            mc.player.getInventory().items.set(idx, stack);
+        if (idx >= 0 && idx < mc.player.getInventory().getNonEquipmentItems().size())
+            mc.player.getInventory().getNonEquipmentItems().set(idx, stack);
     }
 
     static void playSwapSound(Minecraft mc, SwapConfigAdapter config) {
         if (!config.soundEnabled() || mc.player == null) return;
-        mc.player.playNotifySound(SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.8f, 1.0f);
+        mc.player.playSound(SoundEvents.ITEM_PICKUP, 0.8f, 1.0f);
     }
 
     // ── Hotbar priority helpers ──
@@ -543,7 +543,7 @@ public final class SwapEngine {
     /**
      * 4-step PICKUP: stash held item from {@code sel} → {@code emptyMenuIdx},
      * then pick target item → {@code sel}.  All steps in the same tick,
-     * synchronous via {@code handleInventoryMouseClick}.
+     * synchronous via {@code handleContainerInput}.
      */
     private static void performHotbarStashThenPickup(Minecraft mc, AbstractContainerScreen<?> screen,
                                                       Slot targetSlot, int sel, int emptyMenuIdx) {
@@ -552,12 +552,12 @@ public final class SwapEngine {
         if (hotbarMenuSlot == null) return;
 
         // Step 1-2: Stash held item from sel → empty hotbar slot
-        mc.gameMode.handleInventoryMouseClick(cid, hotbarMenuSlot.index, 0, ClickType.PICKUP, mc.player);
-        mc.gameMode.handleInventoryMouseClick(cid, emptyMenuIdx, 0, ClickType.PICKUP, mc.player);
+        mc.gameMode.handleContainerInput(cid, hotbarMenuSlot.index, 0, ContainerInput.PICKUP, mc.player);
+        mc.gameMode.handleContainerInput(cid, emptyMenuIdx, 0, ContainerInput.PICKUP, mc.player);
 
         // Step 3-4: Pick target item → sel
-        mc.gameMode.handleInventoryMouseClick(cid, targetSlot.index, 0, ClickType.PICKUP, mc.player);
-        mc.gameMode.handleInventoryMouseClick(cid, hotbarMenuSlot.index, 0, ClickType.PICKUP, mc.player);
+        mc.gameMode.handleContainerInput(cid, targetSlot.index, 0, ContainerInput.PICKUP, mc.player);
+        mc.gameMode.handleContainerInput(cid, hotbarMenuSlot.index, 0, ContainerInput.PICKUP, mc.player);
     }
 
     // ── Reflection helpers for creative inventory internals ──

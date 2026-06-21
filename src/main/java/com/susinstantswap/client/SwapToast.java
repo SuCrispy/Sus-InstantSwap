@@ -57,6 +57,6 @@ public final class SwapToast {
         msg.setStyle(Style.EMPTY.withColor(TextColor.fromLegacyFormat(color)));
 
         // 使用 action bar 显示（第二个参数 true = overlay）
-        mc.player.displayClientMessage(msg, true);
+        mc.player.sendOverlayMessage(msg);
     }
 }

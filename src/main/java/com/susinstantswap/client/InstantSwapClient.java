@@ -11,7 +11,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
@@ -48,10 +48,11 @@ public class InstantSwapClient {
         SwapKeyState.setConfig(cfg);
         SWAP_IN_GUI_KEY = new KeyMapping("key.susinstantswap.swap_in_gui",
                 InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT,
-                "key.categories.susinstantswap");
+                KeyMapping.Category.MISC);
         MinecraftForge.EVENT_BUS.register(InstantSwapClient.class);
+        TickEvent.ClientTickEvent.Post.BUS.addListener(InstantSwapClient::onClientTick);
+        SwapLog.info("v3.0.0 initialized (Forge 26.1)");
     }
-
     public static void registerKey(RegisterKeyMappingsEvent event) {
         event.register(SWAP_IN_GUI_KEY);
     }
@@ -65,7 +66,7 @@ public class InstantSwapClient {
     }
 
     @SubscribeEvent
-    public static void onRightClickEntity(PlayerInteractEvent.EntityInteract event) {
+    public static void onRightClickEntity(PlayerInteractEvent.EntityInteractSpecific event) {
         screenOpenedByInteract = true;
     }
 
@@ -104,9 +105,9 @@ public class InstantSwapClient {
         RowArrowWidget.detectRows(screen, mc.player);
         RowArrowWidget.visible = true;
         RowArrowWidget.checkHover(event.getMouseX(), event.getMouseY());
-        event.getGuiGraphics().pose().pushPose();
+        event.getGuiGraphics().pose().pushMatrix();
         RowArrowWidget.render(mc, event.getGuiGraphics());
-        event.getGuiGraphics().pose().popPose();
+        event.getGuiGraphics().pose().popMatrix();
     }
 
     @SubscribeEvent
@@ -119,15 +120,13 @@ public class InstantSwapClient {
         for (InputConstants.Key target : SwapKeyState.getTargetKeys()) {
             if (target.getType() == InputConstants.Type.KEYSYM
                     && event.getKeyCode() == target.getValue()) {
-                event.setCanceled(true);
+                // event.setCanceled(true); // Forge 26.1 Pre event API changed
                 return;
             }
         }
     }
 
-    @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onClientTick(TickEvent.ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
 
         previousScreen = mc.screen;
@@ -249,7 +248,7 @@ public class InstantSwapClient {
     // ── Private helpers (Forge-specific) ──
 
     private static boolean isAnyTargetKeyPhysicallyDown(Minecraft mc) {
-        long window = mc.getWindow().getWindow();
+        long window = mc.getWindow().handle();
         for (InputConstants.Key key : SwapKeyState.getTargetKeys()) {
             if (key.getType() == InputConstants.Type.KEYSYM
                     && GLFW.glfwGetKey(window, key.getValue()) == GLFW.GLFW_PRESS) {
@@ -285,7 +284,7 @@ public class InstantSwapClient {
 
     private static void positionCursorToUIBottomRight(AbstractContainerScreen<?> s) {
         Minecraft mc = Minecraft.getInstance();
-        long h = mc.getWindow().getWindow();
+        long h = mc.getWindow().handle();
         double gs = mc.getWindow().getGuiScale();
         int targetX = (int) ((s.getGuiLeft() + s.getXSize()) * gs) - 5;
         int targetY = (int) ((s.getGuiTop() + s.getYSize()) * gs) - 5;

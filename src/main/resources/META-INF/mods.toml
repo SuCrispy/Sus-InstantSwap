@@ -1,5 +1,6 @@
 modLoader="javafml"
 loaderVersion="[7,)"
+license="LGPL-3.0"
 
 [[mods]]
 modId="susinstantswap"
