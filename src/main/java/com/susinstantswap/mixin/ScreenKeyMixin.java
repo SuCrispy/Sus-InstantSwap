@@ -34,7 +34,7 @@ public class ScreenKeyMixin {
         Minecraft mc = Minecraft.getInstance();
         if (mc == null || mc.options == null) return;
 
-        InputConstants.Key invKey = mc.options.keyInventory.getKey();
+        InputConstants.Key invKey = ((KeyMappingAccessor) mc.options.keyInventory).getKey();
         InputConstants.Key pressed = InputConstants.getKey(keyCode, scanCode);
         if (pressed.getType() != invKey.getType() || pressed.getValue() != invKey.getValue()) return;
 
