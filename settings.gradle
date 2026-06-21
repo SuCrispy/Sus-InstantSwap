@@ -1,20 +1,10 @@
 pluginManagement {
     repositories {
-        gradlePluginPortal()
         maven { url = 'https://maven.minecraftforge.net/' }
-        maven {
-            name = "Tencent Mirror"
-            url = "https://mirrors.cloud.tencent.com/nexus/repository/maven-public/"
-        }
-        maven {
-            name = "Aliyun Mirror"
-            url = "https://maven.aliyun.com/repository/public/"
-        }
+        maven { url = 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
+        mavenCentral()
+        gradlePluginPortal()
     }
 }
 
-plugins {
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
-}
-
-rootProject.name = 'Sus_InstantSwap_Forge26.1'
+rootProject.name = 'Sus_InstantSwap'

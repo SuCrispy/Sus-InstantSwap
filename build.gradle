@@ -6,30 +6,22 @@ plugins {
     id 'net.minecraftforge.gradle' version '[7.0.17,8)'
 }
 
-base {
-    archivesName = 'Sus_InstantSwap-2.0.1-Forge26.1'
-}
+base { archivesName = 'Sus_InstantSwap-3.0.0-Forge26.1' }
 
-version = '2.0.1'
+version = '3.0.0'
 group = 'com.susinstantswap'
 
-// Mojang ships Java 25 for 26.1+
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 minecraft {
     runs {
         configureEach {
             workingDir = layout.projectDirectory.dir('run')
-
             systemProperty 'eventbus.api.strictRuntimeChecks', 'true'
             systemProperty 'forge.enabledGameTestNamespaces', 'susinstantswap'
         }
-
         register('client')
-
-        register('server') {
-            args '--nogui'
-        }
+        register('server') { args '--nogui' }
     }
 }
 
@@ -38,8 +30,6 @@ repositories {
     maven fg.forgeMaven
     maven fg.minecraftLibsMaven
     mavenCentral()
-    maven { url = 'https://maven.aliyun.com/repository/public/' }
-    maven { url = 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
 }
 
 dependencies {
@@ -50,10 +40,10 @@ dependencies {
 
 tasks.named('processResources', ProcessResources).configure {
     var replaceProperties = [
-            minecraft_version: '26.1',
-            forge_version: '62.0.9',
-            mod_id: 'susinstantswap',
-            mod_version: '2.0.1',
+        minecraft_version: '26.1',
+        forge_version: '62.0.9',
+        mod_id: 'susinstantswap',
+        mod_version: '3.0.0',
     ]
     inputs.properties replaceProperties
     filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
@@ -65,11 +55,11 @@ tasks.named('jar', Jar).configure {
     archiveVersion = ''
     manifest {
         attributes([
-                'Specification-Title'     : 'susinstantswap',
-                'Specification-Version'   : '2.0.1',
-                'Implementation-Title'    : "Su's Instant Swap",
-                'Implementation-Version'  : '2.0.1',
-                'MixinConfigs': 'susinstantswap.mixins.json'
+            'Specification-Title': 'susinstantswap',
+            'Specification-Version': '3.0.0',
+            'Implementation-Title': "Su's Instant Swap",
+            'Implementation-Version': '3.0.0',
+            'MixinConfigs': 'susinstantswap.mixins.json'
         ])
     }
 }

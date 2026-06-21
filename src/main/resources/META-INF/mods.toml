@@ -1,15 +1,13 @@
 modLoader="javafml"
-loaderVersion="[1,)"
-license="LGPL-3.0"
+loaderVersion="[7,)"
 
 [[mods]]
 modId="susinstantswap"
-side="CLIENT"
-version="${mod_version}"
+version="3.0.0"
 displayName="Su's Instant Swap"
 logoFile="assets/susinstantswap/icon.png"
 authors="Su_Crispy"
-description="Hold the inventory key to swap items with your hotbar. Coexists with vanilla — short press toggles inventory, long press swaps."
+description='''Hold the inventory key to swap items with your hotbar. Coexists with vanilla.'''
 clientSideOnly=true
 
 [[mixins]]
@@ -18,7 +16,7 @@ config="susinstantswap.mixins.json"
 [[dependencies.susinstantswap]]
     modId="forge"
     mandatory=true
-    versionRange="[62,65)"
+    versionRange="[62,)"
     ordering="NONE"
     side="CLIENT"
 
