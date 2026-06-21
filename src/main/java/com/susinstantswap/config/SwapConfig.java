@@ -2,83 +2,52 @@ package com.susinstantswap.config;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 
-/**
- * Sus-InstantSwap v2.0 — Forge config (Spec + Runtime dual-layer).
- */
-public class SwapConfig {
-
+public class SwapConfig implements SwapConfigAdapter {
     public final ForgeConfigSpec.BooleanValue modEnabled;
     public final ForgeConfigSpec.IntValue holdThresholdMs;
     public final ForgeConfigSpec.BooleanValue soundEnabled;
     public final ForgeConfigSpec.BooleanValue mouseReposition;
+    public final ForgeConfigSpec.BooleanValue hotbarPriorityEnabled;
     public final ForgeConfigSpec.BooleanValue guiSwapEnabled;
     public final ForgeConfigSpec.BooleanValue emptySlotSwapEnabled;
+    public final ForgeConfigSpec.BooleanValue rowSwapEnabled;
+    public final ForgeConfigSpec.BooleanValue toastEnabled;
     public final ForgeConfigSpec.BooleanValue debug;
 
-    public static boolean modEnabledRuntime = true;
-    public static int holdThresholdMsRuntime = 200;
-    public static boolean soundEnabledRuntime = true;
-    public static boolean mouseRepositionRuntime = true;
-    public static boolean guiSwapEnabledRuntime = false;
-    public static boolean emptySlotSwapEnabledRuntime = false;
-    public static boolean debugRuntime = false;
-
     public SwapConfig(ForgeConfigSpec.Builder builder) {
-        builder.comment("Su's Instant Swap v2.0 Configuration");
-
-        modEnabled = builder
-                .translation("config.susinstantswap.modEnabled")
-                .comment("Master switch - off disables the mod completely")
-                .define("modEnabled", true);
-
-        holdThresholdMs = builder
-                .translation("config.susinstantswap.holdThresholdMs")
-                .comment("Duration (ms) above which a press is treated as long press. Range: 50-1000")
-                .defineInRange("holdThresholdMs", 200, 50, 1000);
-
-        soundEnabled = builder
-                .translation("config.susinstantswap.soundEnabled")
-                .comment("Play item pickup sound on swap")
-                .define("soundEnabled", true);
-
-        mouseReposition = builder
-                .translation("config.susinstantswap.mouseReposition")
-                .comment("Auto-move cursor to UI corner when container opens")
-                .define("mouseReposition", true);
-
-        guiSwapEnabled = builder
-                .translation("config.susinstantswap.guiSwapEnabled")
-                .comment("Enable in-GUI swap key (press swap key in container to swap + close)")
-                .define("guiSwapEnabled", false);
-
-        emptySlotSwapEnabled = builder
-                .translation("config.susinstantswap.emptySlotSwapEnabled")
-                .comment("Also perform swap when hovering over an empty slot")
-                .define("emptySlotSwapEnabled", false);
-
-        debug = builder
-                .translation("config.susinstantswap.debug")
-                .comment("Print debug info to game log")
-                .define("debug", false);
+        builder.comment("Su's Instant Swap Configuration", "", "Changes take effect immediately.");
+        modEnabled = builder.translation("config.susinstantswap.modEnabled")
+                .comment("Master switch — disable to turn off all mod functionality").define("modEnabled", true);
+        holdThresholdMs = builder.translation("config.susinstantswap.holdThresholdMs")
+                .comment("Long Press Threshold (ms). Range: 50~1000").defineInRange("holdThresholdMs", 200, 50, 1000);
+        soundEnabled = builder.translation("config.susinstantswap.soundEnabled")
+                .comment("Swap Sound").define("soundEnabled", true);
+        mouseReposition = builder.translation("config.susinstantswap.mouseReposition")
+                .comment("Open container or inventory, the mouse will automatically move to the bottom-right corner").define("mouseReposition", true);
+        hotbarPriorityEnabled = builder.translation("config.susinstantswap.hotbarPriorityEnabled")
+                .comment("Before swapping, stash the held item into an empty hotbar slot first if available").define("hotbarPriorityEnabled", false);
+        guiSwapEnabled = builder.translation("config.susinstantswap.guiSwapEnabled")
+                .comment("In container screens, press the GUI swap key to directly swap items and close the screen").define("guiSwapEnabled", false);
+        emptySlotSwapEnabled = builder.translation("config.susinstantswap.emptySlotSwapEnabled")
+                .comment("Also swap empty slots").define("emptySlotSwapEnabled", false);
+        rowSwapEnabled = builder.translation("config.susinstantswap.rowSwapEnabled")
+                .comment("In survival inventory, show arrow icons on the left to swap entire rows with the hotbar").define("rowSwapEnabled", true);
+        toastEnabled = builder.translation("config.susinstantswap.toastEnabled")
+                .comment("Show action bar toast messages (warnings, errors, info)").define("toastEnabled", true);
+        debug = builder.translation("config.susinstantswap.debug")
+                .comment("Debug Logging").define("debug", false);
     }
 
-    public void syncToRuntime() {
-        modEnabledRuntime = modEnabled.get();
-        holdThresholdMsRuntime = holdThresholdMs.get();
-        soundEnabledRuntime = soundEnabled.get();
-        mouseRepositionRuntime = mouseReposition.get();
-        guiSwapEnabledRuntime = guiSwapEnabled.get();
-        emptySlotSwapEnabledRuntime = emptySlotSwapEnabled.get();
-        debugRuntime = debug.get();
-    }
+    // ── SwapConfigAdapter implementation ──
 
-    public void syncToSpec() {
-        modEnabled.set(modEnabledRuntime);
-        holdThresholdMs.set(holdThresholdMsRuntime);
-        soundEnabled.set(soundEnabledRuntime);
-        mouseReposition.set(mouseRepositionRuntime);
-        guiSwapEnabled.set(guiSwapEnabledRuntime);
-        emptySlotSwapEnabled.set(emptySlotSwapEnabledRuntime);
-        debug.set(debugRuntime);
-    }
+    @Override public boolean modEnabled()            { return modEnabled.get(); }
+    @Override public int     holdThresholdMs()        { return holdThresholdMs.get(); }
+    @Override public boolean soundEnabled()           { return soundEnabled.get(); }
+    @Override public boolean mouseReposition()        { return mouseReposition.get(); }
+    @Override public boolean hotbarPriorityEnabled()  { return hotbarPriorityEnabled.get(); }
+    @Override public boolean guiSwapEnabled()         { return guiSwapEnabled.get(); }
+    @Override public boolean emptySlotSwapEnabled()   { return emptySlotSwapEnabled.get(); }
+    @Override public boolean rowSwapEnabled()         { return rowSwapEnabled.get(); }
+    @Override public boolean toastEnabled()           { return toastEnabled.get(); }
+    @Override public boolean debug()                  { return debug.get(); }
 }

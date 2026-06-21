@@ -2,7 +2,8 @@
     "required": true, "minVersion": "0.8",
     "package": "com.susinstantswap.mixin",
     "compatibilityLevel": "JAVA_17",
+    "refmap": "susinstantswap.refmap.json",
     "mixins": [],
-    "client": ["KeyClickMixin", "ScreenKeyMixin"],
+    "client": ["KeyClickMixin", "ScreenKeyMixin", "ContainerScreenMixin"],
     "injectors": { "defaultRequire": 1 }
 }

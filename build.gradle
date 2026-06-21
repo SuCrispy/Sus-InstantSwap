@@ -7,7 +7,7 @@ plugins {
 version = mod_version
 group = mod_group_id
 
-base { archivesName = 'Sus_InstantSwap-2.0.1-Forge1.20.1' }
+base { archivesName = 'Sus_InstantSwap-3.0.0-Forge1.20.1' }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
@@ -62,9 +62,37 @@ tasks.named('jar', Jar).configure {
         ])
     }
     archiveVersion = ''
-    finalizedBy 'reobfJar'
+}
+
+// ── Mixin AP: TSRG2 → SRG conversion for refmap generation ──
+// ForgeGradle generates TSRG2, but Mixin AP 0.8.5 only reads standard SRG.
+tasks.register('convertTsrgToSrg') {
+    dependsOn 'createMcpToSrg'
+    def tsrgFile = file("${buildDir}/createMcpToSrg/output.tsrg")
+    def srgFile = file("${buildDir}/createMcpToSrg/output.srg")
+    inputs.file(tsrgFile).optional()
+    outputs.file(srgFile)
+    doLast {
+        String cls_l = null, cls_r = null
+        srgFile.withWriter('UTF-8') { out ->
+            tsrgFile.eachLine('UTF-8') { line ->
+                if (line.startsWith('tsrg2 ')) return
+                int tabs = 0
+                for (int i = 0; i < line.length() && line.charAt(i) == '\t' as char; i++) tabs++
+                String[] p = line.trim().split(' ')
+                if (tabs == 0 && p.length >= 2) { cls_l = p[0]; cls_r = p[1]; out.println("CL: ${cls_l} ${cls_r}") }
+                else if (tabs == 1 && p.length >= 3 && p[1].contains('(')) out.println("MD: ${cls_l}/${p[0]} ${p[1]} ${cls_r}/${p[2]} ${p[1]}")
+                else if (tabs == 1 && p.length >= 2 && !p[0].startsWith('<')) out.println("FD: ${cls_l}/${p[0]} ${cls_r}/${p[1]}")
+            }
+        }
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
+    dependsOn 'convertTsrgToSrg'
     options.encoding = 'UTF-8'
+    options.compilerArgs += [
+        '-AreobfSrgFile=' + file("${buildDir}/createMcpToSrg/output.srg"),
+        '-AoutRefMapFile=' + file("${buildDir}/resources/main/susinstantswap.refmap.json")
+    ]
 }
