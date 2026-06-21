@@ -8,7 +8,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
-import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
@@ -25,8 +24,8 @@ public class SusInstantSwapMod {
         CONFIG = new SwapConfig(b);
         CONFIG_SPEC = b.build();
         modContainer.registerConfig(ModConfig.Type.CLIENT, CONFIG_SPEC);
-        if (FMLEnvironment.dist == Dist.CLIENT)
-            modContainer.registerExtensionPoint(IConfigScreenFactory.class, (c, s) -> new ConfigurationScreen(c, s));
+        // @Mod(dist=CLIENT) guarantees client-only; no FMLEnvironment.dist check needed
+        modContainer.registerExtensionPoint(IConfigScreenFactory.class, (c, s) -> new ConfigurationScreen(c, s));
         modEventBus.register(this);
         InstantSwapClient.init(CONFIG);
         SwapLog.info("v3.0.0 initialized (NeoForge 26.1)");

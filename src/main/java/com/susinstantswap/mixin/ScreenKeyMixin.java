@@ -5,6 +5,7 @@ import com.susinstantswap.client.InstantSwapClient;
 import com.susinstantswap.client.SwapKeyState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.KeyEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -13,29 +14,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * Intercepts AbstractContainerScreen.keyPressed() for the inventory key.
  *
- * <p>Three cases:</p>
- * <ol>
- *   <li><b>REPEAT</b> (inventoryKeyHeld=true): block to prevent flicker
- *       during long-press detection.</li>
- *   <li><b>FRESH press, GUI swap key == inventory key</b>: try swap first,
- *       then close the screen via {@code onClose()}. Mark key as handled
- *       to prevent reopening.</li>
- *   <li><b>FRESH press, GUI swap key ≠ inventory key</b>: don't intercept
- *       — vanilla closes normally.</li>
- * </ol>
+ * <p>MC 26.1: keyPressed(III)Z → keyPressed(KeyEvent)Z.
+ * KeyEvent record: key(), scancode(), modifiers().</p>
  */
 @Mixin(value = AbstractContainerScreen.class, remap = false)
 public class ScreenKeyMixin {
 
-    @Inject(method = "keyPressed(III)Z", at = @At("HEAD"), cancellable = true)
-    private void onKeyPressed(int keyCode, int scanCode, int modifiers,
-                              CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "keyPressed(Lnet/minecraft/client/input/KeyEvent;)Z", at = @At("HEAD"), cancellable = true)
+    private void onKeyPressed(KeyEvent event, CallbackInfoReturnable<Boolean> cir) {
         if (!SwapKeyState.modEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc == null || mc.options == null) return;
 
+        int keyCode = event.key();
+        int scanCode = event.scancode();
+
         InputConstants.Key invKey = mc.options.keyInventory.getKey();
-        InputConstants.Key pressed = InputConstants.getKey(keyCode, scanCode);
+        InputConstants.Key pressed = InputConstants.getKey(event);
         if (pressed.getType() != invKey.getType() || pressed.getValue() != invKey.getValue()) return;
 
         if (SwapKeyState.inventoryKeyHeld) {
