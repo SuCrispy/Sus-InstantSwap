@@ -1,0 +1,15 @@
+{
+    "required": true, "minVersion": "0.8",
+    "package": "com.susinstantswap.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "mixins": [],
+    "client": [
+        "KeyClickMixin",
+        "ScreenKeyMixin",
+        "ContainerScreenMixin",
+        "AbstractContainerScreenAccessor",
+        "MouseHandlerAccessor",
+        "KeyMappingAccessor"
+    ],
+    "injectors": { "defaultRequire": 1 }
+}

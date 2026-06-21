@@ -6,21 +6,14 @@ plugins {
 version = project.mod_version
 group = project.maven_group
 
-base { archivesName = 'Sus_InstantSwap-2.0.1-Fabric1.21.1' }
+base { archivesName = 'Sus_InstantSwap-3.0.0-Fabric1.21.1' }
 
 repositories {
     maven { url "https://api.modrinth.com/maven" }
 }
 
 loom {
-    splitEnvironmentSourceSets()
-    accessWidenerPath = file("src/client/resources/susinstantswap.accesswidener")
-    mods {
-        "susinstantswap" {
-            sourceSet sourceSets.main
-            sourceSet sourceSets.client
-        }
-    }
+    accessWidenerPath = file("src/main/resources/susinstantswap.accesswidener")
 }
 
 dependencies {
@@ -31,7 +24,7 @@ dependencies {
     modImplementation "maven.modrinth:modmenu:${project.modmenu_version}"
 }
 
-processClientResources {
+processResources {
     def version = project.version
     inputs.property "version", version
     filesMatching("fabric.mod.json") {
@@ -52,18 +45,8 @@ java {
 
 jar {
     archiveVersion = ''
-    from("LICENSE") {
-        rename { "${it}_Sus_InstantSwap" }
-    }
 }
 
 remapJar {
     archiveVersion = ''
-}
-
-publishing {
-    publications {
-        create("mavenJava", MavenPublication) { from components.java }
-    }
-    repositories {}
 }
