@@ -1,6 +1,7 @@
 package com.susinstantswap;
 
 import com.susinstantswap.client.InstantSwapClient;
+import com.susinstantswap.config.ForgeConfigScreen;
 import com.susinstantswap.config.SwapConfig;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
@@ -23,11 +24,11 @@ public class SusInstantSwapMod {
 
         context.registerConfig(ModConfig.Type.CLIENT, CONFIG_SPEC);
 
-        // Config screen disabled for Forge 26.1 (needs API updates)
+        // Config screen via ModMenu / mods list
         ModLoadingContext.get().registerExtensionPoint(
                 net.minecraftforge.client.ConfigScreenHandler.ConfigScreenFactory.class,
                 () -> new net.minecraftforge.client.ConfigScreenHandler.ConfigScreenFactory(
-                        (mc, screen) -> null
+                        (mc, screen) -> new ForgeConfigScreen(screen)
                 )
         );
 
