@@ -21,28 +21,11 @@ public class ContainerScreenMixin {
             at = @At("TAIL"))
     private void onRender(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY,
                           float partialTick, CallbackInfo ci) {
-        if (!SwapKeyState.modEnabled) return;
-
-        // Skip for backpack screens — handled by onScreenRenderPost fallback
-        // (some backpack screens don't call super.render(), so TAIL won't fire)
-        AbstractContainerScreen<?> self = (AbstractContainerScreen<?>) (Object) this;
-        if (BackpackScreenMatcher.isBackpackScreen(self)) return;
-
-        SwapConfigAdapter cfg = SwapKeyState.getConfig();
-        if (cfg == null || !cfg.rowSwapEnabled()) {
-            RowArrowWidget.visible = false;
-            return;
-        }
-
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
-
-        RowArrowWidget.detectRows(self, mc.player);
-        RowArrowWidget.visible = true;
-        RowArrowWidget.checkHover(mouseX, mouseY);
-
-        guiGraphics.pose().pushMatrix();
-        RowArrowWidget.render(mc, guiGraphics);
-        guiGraphics.pose().popMatrix();
+        // Disabled on 26.1: drawing the row-swap UI during the extractRenderState
+        // TAIL does NOT render for vanilla containers under the new render-state
+        // architecture. All row-swap UI is now drawn from
+        // InstantSwapClient.onScreenRenderPost (ScreenEvent.Render.Post), which
+        // works for every AbstractContainerScreen (vanilla inventory, chests,
+        // and backpack mods alike).
     }
 }

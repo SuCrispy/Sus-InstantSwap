@@ -2,6 +2,7 @@
   "description.susinstantswap": "透過長按機制，快速將物品欄中的物品換到手中，且支援整行交換到快捷欄。",
   "key.susinstantswap.swap_in_gui": "介面中更換",
   "key.categories.susinstantswap": "探囊取物",
+  "key.category.susinstantswap.main": "探囊取物",
   "config.susinstantswap.title": "探囊取物 - 設定",
   "config.susinstantswap.modEnabled": "啟用模組",
   "config.susinstantswap.modEnabled.tooltip": "關閉後模組完全停用",

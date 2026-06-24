@@ -2,6 +2,7 @@
   "description.susinstantswap": "Envanter tuşuna basılı tutarak eşyaları hızlı erişim çubuğuyla değiştirin. Vanilla ile uyumludur — kısa basış envanteri açar, uzun basış değiştirir.",
   "key.susinstantswap.swap_in_gui": "GUI'de değiştir",
   "key.categories.susinstantswap": "Su's Instant Swap",
+  "key.category.susinstantswap.main": "Su's Instant Swap",
   "config.susinstantswap.title": "Su's Instant Swap — Ayarlar",
   "config.susinstantswap.modEnabled": "Modu Etkinleştir",
   "config.susinstantswap.modEnabled.tooltip": "Ana anahtar — kapalıyken mod tamamen devre dışıdır, E tuşu vanilla gibi davranır.",

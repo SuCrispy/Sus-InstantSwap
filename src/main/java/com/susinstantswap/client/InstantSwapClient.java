@@ -34,6 +34,17 @@ public class InstantSwapClient {
     private static KeyMapping SWAP_IN_GUI_KEY;
     private static SwapConfigAdapter config;
 
+    /**
+     * Dedicated key category so the binding shows under its own group in the
+     * Controls screen. On 26.1 the KeyBindsList groups bindings by a
+     * registered {@link KeyMapping.Category}; the built-in MISC constant does
+     * NOT surface modded bindings there, so we register our own category
+     * (matches the verified v2.0.0 behaviour).
+     */
+    private static final KeyMapping.Category CATEGORY =
+            KeyMapping.Category.register(
+                    net.minecraft.resources.Identifier.fromNamespaceAndPath("susinstantswap", "main"));
+
     enum SwapState { IDLE, WATCHING, LONG_PRESS }
     private static SwapState state = SwapState.IDLE;
 
@@ -48,13 +59,14 @@ public class InstantSwapClient {
         SwapKeyState.setConfig(cfg);
         SWAP_IN_GUI_KEY = new KeyMapping("key.susinstantswap.swap_in_gui",
                 InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT,
-                KeyMapping.Category.MISC);
+                CATEGORY);
         NeoForge.EVENT_BUS.register(InstantSwapClient.class);
         SwapLog.info("v3.0.0 client initialized (NF26.1)");
     }
 
     public static void registerKey(RegisterKeyMappingsEvent event) {
         event.register(SWAP_IN_GUI_KEY);
+        SwapLog.info("swap_in_gui key registered via RegisterKeyMappingsEvent");
     }
 
     private static boolean screenOpenedByInteract = false;
@@ -93,12 +105,18 @@ public class InstantSwapClient {
     @SubscribeEvent
     public static void onScreenRenderPost(ScreenEvent.Render.Post event) {
         if (!SwapKeyState.modEnabled) return;
-        SwapConfigAdapter cfg = config;
-        if (cfg == null || !cfg.rowSwapEnabled()) return;
         if (!(event.getScreen() instanceof AbstractContainerScreen<?> screen)) return;
+        SwapConfigAdapter cfg = config;
+        if (cfg == null || !cfg.rowSwapEnabled()) {
+            RowArrowWidget.visible = false;
+            return;
+        }
 
-        if (!BackpackScreenMatcher.isBackpackScreen(screen)) return;
-
+        // Single source of truth for the row-swap UI: handles ALL container
+        // screens (survival inventory, chests, backpack mods). On 26.1 the
+        // render-state architecture makes drawing during the Mixin's
+        // extractRenderState TAIL ineffective for vanilla containers, so the
+        // event path (Screen render Post) draws everything now.
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
@@ -286,8 +304,8 @@ public class InstantSwapClient {
         Minecraft mc = Minecraft.getInstance();
         long h = mc.getWindow().handle();
         double gs = mc.getWindow().getGuiScale();
-        int targetX = (int) ((s.getLeftPos() + s.getImageWidth()) * gs) - 5;
-        int targetY = (int) ((s.getTopPos() + s.getImageHeight()) * gs) - 5;
+        int targetX = (int) ((ScreenAccess.leftPos(s) + ScreenAccess.imageWidth(s)) * gs) - 5;
+        int targetY = (int) ((ScreenAccess.topPos(s) + ScreenAccess.imageHeight(s)) * gs) - 5;
 
         MouseHandler mh = mc.mouseHandler;
         try {
