@@ -2,6 +2,7 @@
   "description.susinstantswap": "Mantén pulsada la tecla de inventario para intercambiar objetos con la barra rápida. Convive con vanilla — pulsación corta abre el inventario, pulsación larga intercambia.",
   "key.susinstantswap.swap_in_gui": "Intercambiar en interfaz",
   "key.categories.susinstantswap": "Su's Instant Swap",
+  "key.category.susinstantswap.main": "Su's Instant Swap",
   "config.susinstantswap.title": "Su's Instant Swap — Configuración",
   "config.susinstantswap.modEnabled": "Activar mod",
   "config.susinstantswap.modEnabled.tooltip": "Interruptor principal — desactivado, el mod está completamente inactivo, tecla E se comporta como vanilla.",

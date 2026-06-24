@@ -4,7 +4,6 @@ import com.susinstantswap.client.InstantSwapClient;
 import com.susinstantswap.config.ForgeConfigScreen;
 import com.susinstantswap.config.SwapConfig;
 import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
@@ -32,13 +31,11 @@ public class SusInstantSwapMod {
                 )
         );
 
-        // FML 26.1 auto-registers @Mod class methods with @SubscribeEvent
+        // Key mappings are registered inside InstantSwapClient.init() via
+        // RegisterKeyMappingsEvent.BUS.addListener (mod event bus). The old
+        // @Mod-class @SubscribeEvent handler did NOT receive the mod-bus event
+        // under FML 8 auto-scan, so it has been removed.
         InstantSwapClient.init(CONFIG);
         SwapLog.info("v3.0.0 initialized (Forge 26.1)");
-    }
-
-    @SubscribeEvent
-    public void onRegisterKeyMappings(net.minecraftforge.client.event.RegisterKeyMappingsEvent event) {
-        InstantSwapClient.registerKey(event);
     }
 }

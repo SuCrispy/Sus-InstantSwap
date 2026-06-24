@@ -2,6 +2,7 @@
   "description.susinstantswap": "กดปุ่มช่องเก็บของค้างเพื่อสลับไอเทมกับฮอตบาร์ ทำงานร่วมกับวานิลลาได้ — กดสั้นๆ เปิดช่องเก็บของ กดค้างสลับไอเทม",
   "key.susinstantswap.swap_in_gui": "สลับใน GUI",
   "key.categories.susinstantswap": "Su's Instant Swap",
+  "key.category.susinstantswap.main": "Su's Instant Swap",
   "config.susinstantswap.title": "Su's Instant Swap — การตั้งค่า",
   "config.susinstantswap.modEnabled": "เปิดใช้งานม็อด",
   "config.susinstantswap.modEnabled.tooltip": "สวิตช์หลัก — เมื่อปิด ม็อดจะถูกปิดใช้งานอย่างสมบูรณ์ ปุ่ม E จะทำงานเหมือนวานิลลา",

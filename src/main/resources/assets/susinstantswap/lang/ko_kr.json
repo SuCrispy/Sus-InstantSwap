@@ -2,6 +2,7 @@
   "description.susinstantswap": "길게 눌러 인벤토리와 핫바 간 아이템 교환. 짧게 누르면 일반적으로 인벤토리가 열립니다. 단일 슬롯 및 행 단위 교환 지원.",
   "key.susinstantswap.swap_in_gui": "GUI 내 교환",
   "key.categories.susinstantswap": "Su's Instant Swap",
+  "key.category.susinstantswap.main": "Su's Instant Swap",
   "config.susinstantswap.title": "Su's Instant Swap — 설정",
   "config.susinstantswap.modEnabled": "모드 활성화",
   "config.susinstantswap.modEnabled.tooltip": "끄면 모드가 완전히 비활성화되고 E 키가 바닐라 동작으로 돌아갑니다.",

@@ -49,12 +49,11 @@ public class ForgeConfigScreen extends Screen {
         int currentMs = SusInstantSwapMod.CONFIG.holdThresholdMs.get();
         this.addRenderableWidget(new AbstractSliderButton(
                 leftCol, y, 150, 20,
-                Component.translatable("config.susinstantswap.holdThresholdMs", currentMs),
+                sliderLabel(currentMs),
                 (double) (currentMs - 50) / 950.0) {
             @Override
             protected void updateMessage() {
-                setMessage(Component.translatable("config.susinstantswap.holdThresholdMs",
-                        (int) (this.value * 950 + 50)));
+                setMessage(sliderLabel((int) (this.value * 950 + 50)));
             }
             @Override
             protected void applyValue() {
@@ -84,6 +83,17 @@ public class ForgeConfigScreen extends Screen {
 
         this.addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> this.onClose())
                 .bounds(this.width / 2 - 100, y, 200, 20).build());
+    }
+
+    /**
+     * Build the slider label as "&lt;localized title&gt;: &lt;value&gt; ms".
+     * The lang strings for holdThresholdMs carry no %s placeholder, so passing
+     * the value as a translation arg silently drops it. We append the number
+     * explicitly so the slider always shows the current value.
+     */
+    private static Component sliderLabel(int ms) {
+        return Component.translatable("config.susinstantswap.holdThresholdMs")
+                .copy().append(Component.literal(": " + ms + " ms"));
     }
 
     @Override

@@ -2,6 +2,7 @@
   "description.susinstantswap": "اضغط باستمرار على مفتاح المخزون لمبادلة العناصر مع شريط الوصول السريع. يتعايش مع الفانيليا — الضغط القصير يفتح المخزون، الضغط الطويل يقوم بالمبادلة.",
   "key.susinstantswap.swap_in_gui": "مبادلة في واجهة المستخدم",
   "key.categories.susinstantswap": "Su's Instant Swap",
+  "key.category.susinstantswap.main": "Su's Instant Swap",
   "config.susinstantswap.title": "Su's Instant Swap — الإعدادات",
   "config.susinstantswap.modEnabled": "تفعيل المود",
   "config.susinstantswap.modEnabled.tooltip": "مفتاح رئيسي — عند الإيقاف، يتم تعطيل المود بالكامل ويعمل مفتاح E كالفانيليا.",
