@@ -49,13 +49,11 @@ public class SwapConfigScreen extends Screen {
         // Hold Threshold (slider, 50-1000ms)
         this.thresholdSlider = new net.minecraft.client.gui.components.AbstractSliderButton(
                 leftCol, y, 150, 20,
-                Component.translatable("config.susinstantswap.holdThresholdMs",
-                        config.holdThresholdMs),
+                sliderLabel(config.holdThresholdMs),
                 (double)(config.holdThresholdMs - 50) / 950.0) {
             @Override
             protected void updateMessage() {
-                setMessage(Component.translatable("config.susinstantswap.holdThresholdMs",
-                        (int)(this.value * 950 + 50)));
+                setMessage(sliderLabel((int)(this.value * 950 + 50)));
             }
             @Override
             protected void applyValue() {
@@ -99,6 +97,17 @@ public class SwapConfigScreen extends Screen {
         this.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
         guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 15, 0xFFFFFF);
         super.render(guiGraphics, mouseX, mouseY, partialTick);
+    }
+
+    /**
+     * Build the slider label as "<localized title>: <value> ms".
+     * The lang strings for holdThresholdMs carry no %s placeholder, so passing
+     * the value as a translation arg silently drops it. We append the number
+     * explicitly so the slider always shows the current value.
+     */
+    private static Component sliderLabel(int ms) {
+        return Component.translatable("config.susinstantswap.holdThresholdMs")
+                .copy().append(Component.literal(": " + ms + " ms"));
     }
 
     @Override

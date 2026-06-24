@@ -9,6 +9,7 @@ import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.Container;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ClickType;
@@ -569,11 +570,19 @@ public final class SwapEngine {
         if (!creativeContainerCached) {
             creativeContainerCached = true;
             try {
-                Field f = CreativeModeInventoryScreen.class.getDeclaredField("CONTAINER");
-                f.setAccessible(true);
-                cachedCreativeContainer = f.get(null);
+                for (Field f : CreativeModeInventoryScreen.class.getDeclaredFields()) {
+                    if (java.lang.reflect.Modifier.isStatic(f.getModifiers())
+                            && Container.class.isAssignableFrom(f.getType())) {
+                        f.setAccessible(true);
+                        cachedCreativeContainer = f.get(null);
+                        break;
+                    }
+                }
+                if (cachedCreativeContainer == null) {
+                    SwapLog.warn("CreativeModeInventoryScreen: no static Container field found");
+                }
             } catch (Exception e) {
-                SwapLog.warn("Failed to access CreativeModeInventoryScreen.CONTAINER: {}", e.toString());
+                SwapLog.warn("Failed to access creative CONTAINER: {}", e.toString());
             }
         }
         return cachedCreativeContainer;

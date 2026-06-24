@@ -169,6 +169,10 @@ public class InstantSwapClient {
             SwapKeyState.closePendingTicks--;
             if (SwapKeyState.closePendingTicks == 0 && mc.screen instanceof AbstractContainerScreen) {
                 mc.player.closeContainer();
+                // Consume the inventory key's pending vanilla clicks so
+                // Minecraft.handleKeybinds() does not immediately reopen the
+                // screen from the same physical press, reducing close↔reopen churn.
+                while (mc.options.keyInventory.consumeClick()) {}
                 SwapKeyState.screenWasOpenAtPressStart = false;
                 previousScreen = null;
             }
