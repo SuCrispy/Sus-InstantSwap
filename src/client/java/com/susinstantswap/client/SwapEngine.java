@@ -8,6 +8,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.Container;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ContainerInput;
@@ -284,6 +285,19 @@ public final class SwapEngine {
 
         SwapLog.debug("performRowSwap ENTER: row={} creative={} sel={}", row, mc.player.isCreative(), sel);
 
+        // Guard against stale row data. detectRows() runs in the render pass
+        // (afterExtract) while this runs in the tick pass; on the frame the
+        // player switches containers (e.g. creative ↔ survival inventory) the
+        // cached rowSlots[] can still point at the PREVIOUS menu, whose indices
+        // may exceed the new menu's slot count → getSlot() IndexOutOfBounds.
+        // Skip if the row is invalid or the cached menu isn't the current one.
+        if (row < 0 || row >= RowArrowWidget.ROW_COUNT
+                || RowArrowWidget.getLastMenu() != screen.getMenu()) {
+            SwapLog.debug("performRowSwap: stale/invalid row data (row={}, menuMatch={}), skip",
+                    row, RowArrowWidget.getLastMenu() == screen.getMenu());
+            return false;
+        }
+
         if (screen instanceof CreativeModeInventoryScreen cs) {
             return creativeRowSwap(mc, cs, row, sel, config);
         }
@@ -294,6 +308,11 @@ public final class SwapEngine {
 
         for (int col = 0; col < 9; col++) {
             int slotIdx = RowArrowWidget.rowSlotIndex(row, col);
+            if (slotIdx < 0 || slotIdx >= screen.getMenu().slots.size()) {
+                SwapLog.debug("performRowSwap: slotIdx {} out of bounds (menu size {}), skip col {}",
+                        slotIdx, screen.getMenu().slots.size(), col);
+                continue;
+            }
             Slot s = screen.getMenu().getSlot(slotIdx);
             if (s == null) continue;
 
@@ -568,11 +587,19 @@ public final class SwapEngine {
         if (!creativeContainerCached) {
             creativeContainerCached = true;
             try {
-                Field f = CreativeModeInventoryScreen.class.getDeclaredField("CONTAINER");
-                f.setAccessible(true);
-                cachedCreativeContainer = f.get(null);
+                for (Field f : CreativeModeInventoryScreen.class.getDeclaredFields()) {
+                    if (java.lang.reflect.Modifier.isStatic(f.getModifiers())
+                            && Container.class.isAssignableFrom(f.getType())) {
+                        f.setAccessible(true);
+                        cachedCreativeContainer = f.get(null);
+                        break;
+                    }
+                }
+                if (cachedCreativeContainer == null) {
+                    SwapLog.warn("CreativeModeInventoryScreen: no static Container field found");
+                }
             } catch (Exception e) {
-                SwapLog.warn("Failed to access CreativeModeInventoryScreen.CONTAINER: {}", e.toString());
+                SwapLog.warn("Failed to access creative CONTAINER: {}", e.toString());
             }
         }
         return cachedCreativeContainer;

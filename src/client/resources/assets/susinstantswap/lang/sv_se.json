@@ -2,6 +2,7 @@
   "description.susinstantswap": "Håll ned inventarieknappen för att byta föremål med hotbaren. Samexisterar med vanilla — kort tryck öppnar inventariet, långt tryck byter.",
   "key.susinstantswap.swap_in_gui": "Byt i GUI",
   "key.categories.susinstantswap": "Su's Instant Swap",
+  "key.category.susinstantswap.main": "Su's Instant Swap",
   "config.susinstantswap.title": "Su's Instant Swap — Inställningar",
   "config.susinstantswap.modEnabled": "Aktivera mod",
   "config.susinstantswap.modEnabled.tooltip": "Huvudströmbrytare — avstängt är modden helt inaktiv, E-tangenten fungerar som vanilla.",

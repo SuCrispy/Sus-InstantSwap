@@ -5,15 +5,14 @@ import com.susinstantswap.SwapLog;
 import com.susinstantswap.config.SwapConfigAdapter;
 import com.susinstantswap.mixin.KeyMappingAccessor;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-// TODO[Fabric 26.1]: verify KeyBindingHelper package. The v1 package
-// (net.fabricmc.fabric.api.client.keybinding.v1) may have moved in Fabric API
-// 0.145 for MC 26.1; using the non-versioned package as the candidate path.
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -36,11 +35,23 @@ public class InstantSwapClient {
     private static KeyMapping SWAP_IN_GUI_KEY;
     private static SwapConfigAdapter config;
 
+    /**
+     * Dedicated key category so the binding shows under its own group in the
+     * Controls screen. On 26.1 the KeyBindsList groups bindings by a
+     * registered {@link KeyMapping.Category}; the built-in MISC constant does
+     * NOT surface modded bindings there, so we register our own category
+     * (matches the verified v2.0.0 behaviour).
+     */
+    private static final KeyMapping.Category CATEGORY =
+            KeyMapping.Category.register(
+                    net.minecraft.resources.Identifier.fromNamespaceAndPath("susinstantswap", "main"));
+
     enum SwapState { IDLE, WATCHING, LONG_PRESS }
     private static SwapState state = SwapState.IDLE;
 
     private static boolean configLogged = false;
     private static boolean cursorRepositionedThisPress = false;
+    private static boolean guiSwapKeyWasDown = false;
 
     public static void init(SwapConfigAdapter cfg) {
         config = cfg;
@@ -50,11 +61,26 @@ public class InstantSwapClient {
         SwapKeyState.setConfig(cfg);
         SWAP_IN_GUI_KEY = new KeyMapping("key.susinstantswap.swap_in_gui",
                 InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT,
-                KeyMapping.Category.MISC);
-        // MC 26.1: KeyMapping constructor auto-registers via ALL.put(); no KeyBindingHelper needed
+                CATEGORY);
+        KeyMappingHelper.registerKeyMapping(SWAP_IN_GUI_KEY);
+        SwapLog.info("swap_in_gui key registered via KeyMappingHelper");
 
         ClientTickEvents.END_CLIENT_TICK.register(InstantSwapClient::onClientTick);
         ScreenEvents.AFTER_INIT.register(InstantSwapClient::onScreenInitPost);
+
+        // Row-swap UI: register a per-screen afterExtract listener on every
+        // container screen. afterExtract fires at the very end of the outermost
+        // Screen.extractWithTooltip (the Fabric equivalent of NeoForge/Forge
+        // ScreenEvent.Render.Post), so fill() lands on top and is NOT
+        // overwritten — unlike the old ContainerScreenMixin which drew inside
+        // the AbstractContainerScreen.extractRenderState sub-step (ineffective
+        // for vanilla containers under 26.1's render-state architecture).
+        ScreenEvents.AFTER_INIT.register((mc, screen, w, h) -> {
+            if (screen instanceof AbstractContainerScreen<?>) {
+                ScreenEvents.afterExtract(screen)
+                        .register(InstantSwapClient::onContainerExtractPost);
+            }
+        });
 
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
             screenOpenedByInteract = true;
@@ -94,6 +120,35 @@ public class InstantSwapClient {
         }
     }
 
+    /**
+     * Single source of truth for the row-swap UI on Fabric 26.1. Registered via
+     * {@link ScreenEvents#afterExtract} for every {@link AbstractContainerScreen}
+     * (survival inventory, chests, backpack mods alike). Mirrors the NeoForge/Forge
+     * {@code onScreenRenderPost} (ScreenEvent.Render.Post) handler.
+     */
+    private static void onContainerExtractPost(Screen screen, GuiGraphicsExtractor g,
+                                               int mouseX, int mouseY, float tickDelta) {
+        if (!SwapKeyState.modEnabled) return;
+        if (!(screen instanceof AbstractContainerScreen<?> s)) return;
+
+        SwapConfigAdapter cfg = config;
+        if (cfg == null || !cfg.rowSwapEnabled()) {
+            RowArrowWidget.visible = false;
+            return;
+        }
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+
+        RowArrowWidget.detectRows(s, mc.player);
+        RowArrowWidget.visible = true;
+        RowArrowWidget.checkHover(mouseX, mouseY);
+
+        g.pose().pushMatrix();
+        RowArrowWidget.render(mc, g);
+        g.pose().popMatrix();
+    }
+
     private static void onClientTick(Minecraft mc) {
         previousScreen = mc.screen;
 
@@ -116,13 +171,36 @@ public class InstantSwapClient {
         if (mc.player == null || mc.gameMode == null) {
             state = SwapState.IDLE;
             SwapKeyState.closePendingTicks = 0;
+            guiSwapKeyWasDown = false;
             return;
+        }
+
+        // GUI-swap key (edge-triggered, polled). Runs every tick regardless of
+        // the long-press state machine below — previously this lived AFTER the
+        // `state == IDLE` early-return, so it only fired while the inventory key
+        // was held (i.e. only when the GUI-swap key equalled the inventory key).
+        if (config.guiSwapEnabled() && !SWAP_IN_GUI_KEY.isUnbound()
+                && mc.screen instanceof AbstractContainerScreen) {
+            boolean down = isGuiSwapKeyPhysicallyDown(mc);
+            if (down && !guiSwapKeyWasDown) {
+                SwapEngine.performSwap(mc, config);
+            }
+            guiSwapKeyWasDown = down;
+        } else {
+            guiSwapKeyWasDown = false;
         }
 
         if (SwapKeyState.closePendingTicks > 0) {
             SwapKeyState.closePendingTicks--;
-            if (SwapKeyState.closePendingTicks == 0 && mc.screen instanceof AbstractContainerScreen)
+            if (SwapKeyState.closePendingTicks == 0 && mc.screen instanceof AbstractContainerScreen) {
                 mc.player.closeContainer();
+                // Consume the inventory key's pending vanilla clicks so
+                // handleKeybinds() does NOT immediately reopen the screen from
+                // the same physical press (Fabric GLFW polling otherwise leaves
+                // it unconsumed → spurious reopen → creative menu desync →
+                // "Index 100 out of bounds" crash).
+                while (mc.options.keyInventory.consumeClick()) {}
+            }
         }
 
         if (state == SwapState.IDLE) {
@@ -162,14 +240,6 @@ public class InstantSwapClient {
                 }
                 state = SwapState.IDLE;
                 cursorRepositionedThisPress = false;
-            }
-        }
-
-        // GUI swap key check (polled in tick for Fabric)
-        if (config.guiSwapEnabled() && !SWAP_IN_GUI_KEY.isUnbound()
-                && mc.screen instanceof AbstractContainerScreen) {
-            if (isGuiSwapKeyPhysicallyDown(mc)) {
-                SwapEngine.performSwap(mc, config);
             }
         }
     }

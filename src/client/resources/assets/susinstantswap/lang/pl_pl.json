@@ -2,6 +2,7 @@
   "description.susinstantswap": "Przytrzymaj klawisz ekwipunku, aby wymieniać przedmioty z paskiem szybkiego dostępu. Współistnieje z vanilla — krótkie naciśnięcie otwiera ekwipunek, długie wymienia.",
   "key.susinstantswap.swap_in_gui": "Wymień w interfejsie",
   "key.categories.susinstantswap": "Su's Instant Swap",
+  "key.category.susinstantswap.main": "Su's Instant Swap",
   "config.susinstantswap.title": "Su's Instant Swap — Konfiguracja",
   "config.susinstantswap.modEnabled": "Włącz mod",
   "config.susinstantswap.modEnabled.tooltip": "Główny przełącznik — wyłączony, mod jest całkowicie nieaktywny, klawisz E działa jak vanilla.",

@@ -19,6 +19,7 @@
             "environment": "client"
         }
     ],
+    "accessWidener": "susinstantswap.accesswidener",
     "depends": {
         "fabricloader": ">=0.19.2",
         "minecraft": ">=26.1 <26.2",

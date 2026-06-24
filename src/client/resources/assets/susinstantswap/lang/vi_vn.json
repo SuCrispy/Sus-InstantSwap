@@ -2,6 +2,7 @@
   "description.susinstantswap": "Giữ phím túi đồ để trao đổi vật phẩm với thanh nóng. Cùng tồn tại với vanilla — nhấn ngắn mở túi đồ, nhấn dài trao đổi.",
   "key.susinstantswap.swap_in_gui": "Trao đổi trong GUI",
   "key.categories.susinstantswap": "Su's Instant Swap",
+  "key.category.susinstantswap.main": "Su's Instant Swap",
   "config.susinstantswap.title": "Su's Instant Swap — Cài đặt",
   "config.susinstantswap.modEnabled": "Bật Mod",
   "config.susinstantswap.modEnabled.tooltip": "Công tắc chính — khi tắt, mod hoàn toàn không hoạt động, phím E hoạt động như vanilla.",

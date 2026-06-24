@@ -31,7 +31,11 @@ dependencies {
     implementation "maven.modrinth:modmenu:${project.modmenu_version}"
 }
 
-processResources {
+// 26.1 uses Loom split sources (src/client); resources live under
+// src/client/resources and are handled by processClientResources, not the
+// (empty) processResources task. Apply the version expansion to ALL resource
+// tasks so fabric.mod.json's ${version} is replaced regardless of source set.
+tasks.withType(ProcessResources).configureEach {
     def version = project.version
     inputs.property "version", version
     filesMatching("fabric.mod.json") {

@@ -1,11 +1,5 @@
 package com.susinstantswap.mixin;
 
-import com.susinstantswap.client.BackpackScreenMatcher;
-import com.susinstantswap.client.RowArrowWidget;
-import com.susinstantswap.client.SwapKeyState;
-import com.susinstantswap.config.SwapConfigAdapter;
-
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 
@@ -21,28 +15,19 @@ public class ContainerScreenMixin {
             at = @At("TAIL"))
     private void onRender(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY,
                           float partialTick, CallbackInfo ci) {
-        if (!SwapKeyState.modEnabled) return;
-
-        // Skip for backpack screens — handled by onScreenRenderPost fallback
-        // (some backpack screens don't call super.render(), so TAIL won't fire)
-        AbstractContainerScreen<?> self = (AbstractContainerScreen<?>) (Object) this;
-        if (BackpackScreenMatcher.isBackpackScreen(self)) return;
-
-        SwapConfigAdapter cfg = SwapKeyState.getConfig();
-        if (cfg == null || !cfg.rowSwapEnabled()) {
-            RowArrowWidget.visible = false;
-            return;
-        }
-
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
-
-        RowArrowWidget.detectRows(self, mc.player);
-        RowArrowWidget.visible = true;
-        RowArrowWidget.checkHover(mouseX, mouseY);
-
-        guiGraphics.pose().pushMatrix();
-        RowArrowWidget.render(mc, guiGraphics);
-        guiGraphics.pose().popMatrix();
+        // Disabled on 26.1: drawing the row-swap UI here does NOT render for
+        // vanilla containers. AbstractContainerScreen.extractRenderState is a
+        // sub-step invoked by Screen.extractWithTooltip; anything filled at its
+        // TAIL is overwritten by the outer extract pass that continues
+        // afterwards (slot highlights, carried item, etc.).
+        //
+        // All row-swap UI is now drawn from
+        // InstantSwapClient.onContainerExtractPost, registered via
+        // ScreenEvents.afterExtract — which fires at the very end of the
+        // outermost Screen.extractWithTooltip, the Fabric equivalent of
+        // NeoForge/Forge ScreenEvent.Render.Post, and works for every
+        // AbstractContainerScreen (vanilla inventory, chests, backpack mods).
+        //
+        // The @Inject is kept (body empty) so mixins.json needs no change.
     }
 }

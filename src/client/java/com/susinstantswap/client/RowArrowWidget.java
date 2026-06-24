@@ -13,6 +13,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 
 /**
@@ -46,6 +47,19 @@ public class RowArrowWidget {
     private static final int[][] rowSlots    = new int[ROW_COUNT][9];
     private static int panelLeft;
     private static boolean rowsDetected = false;
+
+    /**
+     * The menu the current rowSlots[] indices belong to. Used by SwapEngine to
+     * reject a stale row swap: detectRows runs in the render pass (afterExtract),
+     * while performRowSwap runs in the tick pass. On the frame the player opens a
+     * different container (e.g. creative → survival inventory), the tick may fire
+     * with rowSlots[] still pointing at the PREVIOUS menu's slot indices, which can
+     * exceed the new menu's slot count → getSlot() IndexOutOfBounds crash. Guarding
+     * on menu identity (and bounds) prevents that.
+     */
+    private static AbstractContainerMenu lastMenu = null;
+
+    public static AbstractContainerMenu getLastMenu() { return lastMenu; }
 
     private static SwapConfigAdapter config;
 
@@ -120,6 +134,7 @@ public class RowArrowWidget {
             idx++;
         }
         rowsDetected = (idx == ROW_COUNT);
+        lastMenu = screen.getMenu();
     }
 
     /** Menu slot index for a given row + column. */

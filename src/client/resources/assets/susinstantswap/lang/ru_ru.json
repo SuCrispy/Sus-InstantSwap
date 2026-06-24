@@ -2,6 +2,7 @@
   "description.susinstantswap": "Обмен предметов между инвентарём и хотбаром долгим нажатием. Короткое нажатие открывает инвентарь как обычно. Поддерживается обмен одного слота и целой строки.",
   "key.susinstantswap.swap_in_gui": "Обмен в интерфейсе",
   "key.categories.susinstantswap": "Su's Instant Swap",
+  "key.category.susinstantswap.main": "Su's Instant Swap",
   "config.susinstantswap.title": "Su's Instant Swap — Настройки",
   "config.susinstantswap.modEnabled": "Включить мод",
   "config.susinstantswap.modEnabled.tooltip": "При выключении мод полностью отключается, и клавиша E возвращается к стандартному поведению.",
