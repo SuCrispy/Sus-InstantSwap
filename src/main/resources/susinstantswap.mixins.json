@@ -7,6 +7,7 @@
         "KeyClickMixin",
         "ScreenKeyMixin",
         "ContainerScreenMixin",
+        "ContainerSetSlotGuardMixin",
         "AbstractContainerScreenAccessor",
         "MouseHandlerAccessor",
         "KeyMappingAccessor"

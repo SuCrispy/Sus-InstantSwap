@@ -169,6 +169,14 @@ public class InstantSwapClient {
             SwapKeyState.closePendingTicks--;
             if (SwapKeyState.closePendingTicks == 0 && mc.screen instanceof AbstractContainerScreen) {
                 mc.player.closeContainer();
+                // Consume the inventory key's pending vanilla clicks so
+                // Minecraft.handleKeybinds() does NOT immediately reopen the
+                // screen from the same physical press. On Forge the key state is
+                // event-driven so this never happens; Fabric polls GLFW each tick,
+                // leaving the vanilla click unconsumed → spurious reopen → the
+                // close↔reopen churn cumulatively desyncs the creative menu and
+                // crashes with "Index 100 out of bounds for length 47".
+                while (mc.options.keyInventory.consumeClick()) {}
                 SwapKeyState.screenWasOpenAtPressStart = false;
                 previousScreen = null;
             }
