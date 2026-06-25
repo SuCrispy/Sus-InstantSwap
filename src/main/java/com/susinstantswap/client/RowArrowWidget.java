@@ -120,6 +120,7 @@ public class RowArrowWidget {
             idx++;
         }
         rowsDetected = (idx == ROW_COUNT);
+        com.susinstantswap.SwapLog.debug("[row] detectRows done: rowsDetected={}", rowsDetected);
     }
 
     /** Menu slot index for a given row + column. */

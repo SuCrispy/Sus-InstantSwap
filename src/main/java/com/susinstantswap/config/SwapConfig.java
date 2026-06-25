@@ -33,7 +33,7 @@ public class SwapConfig implements SwapConfigAdapter {
         rowSwapEnabled = builder.translation("config.susinstantswap.rowSwapEnabled")
                 .comment("In survival inventory, show arrow icons on the left to swap entire rows with the hotbar").define("rowSwapEnabled", true);
         toastEnabled = builder.translation("config.susinstantswap.toastEnabled")
-                .comment("Show action bar toast messages (warnings, errors, info)").define("toastEnabled", true);
+                .comment("Show action bar toast messages (warnings only)").define("toastEnabled", true);
         debug = builder.translation("config.susinstantswap.debug")
                 .comment("Debug Logging").define("debug", false);
     }
