@@ -1,7 +1,6 @@
 {
   "description.susinstantswap": "Tahan tombol inventaris untuk menukar item dengan hotbar. Hidup berdampingan dengan vanilla — tekan singkat buka inventaris, tekan lama tukar.",
   "key.susinstantswap.swap_in_gui": "Tukar di GUI",
-  "key.categories.susinstantswap": "Su's Instant Swap",
   "key.category.susinstantswap.main": "Su's Instant Swap",
   "config.susinstantswap.title": "Su's Instant Swap — Pengaturan",
   "config.susinstantswap.modEnabled": "Aktifkan Mod",

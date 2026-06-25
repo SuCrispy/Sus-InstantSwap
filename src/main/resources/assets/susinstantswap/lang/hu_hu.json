@@ -1,7 +1,6 @@
 {
   "description.susinstantswap": "Tartsd lenyomva a leltár gombot a tárgyak gyorselérési sávval való cseréjéhez. Együttműködik a vanilla-val — rövid lenyomás megnyitja a leltárt, hosszú lenyomás cserél.",
   "key.susinstantswap.swap_in_gui": "Csere a GUI-ban",
-  "key.categories.susinstantswap": "Su's Instant Swap",
   "key.category.susinstantswap.main": "Su's Instant Swap",
   "config.susinstantswap.title": "Su's Instant Swap — Beállítások",
   "config.susinstantswap.modEnabled": "Mod engedélyezése",
