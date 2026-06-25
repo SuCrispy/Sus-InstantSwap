@@ -33,16 +33,8 @@ public final class ScreenAccess {
         return ((AbstractContainerScreenAccessor) s).getHoveredSlot();
     }
 
-    public static double getMouseX(MouseHandler mh) {
-        return ((MouseHandlerAccessor) mh).getXpos();
-    }
-
     public static void setMouseX(MouseHandler mh, double v) {
         ((MouseHandlerAccessor) mh).setXpos(v);
-    }
-
-    public static double getMouseY(MouseHandler mh) {
-        return ((MouseHandlerAccessor) mh).getYpos();
     }
 
     public static void setMouseY(MouseHandler mh, double v) {
