@@ -135,6 +135,7 @@ public class RowArrowWidget {
         }
         rowsDetected = (idx == ROW_COUNT);
         lastMenu = screen.getMenu();
+        com.susinstantswap.SwapLog.debug("[row] detectRows done: rowsDetected={}", rowsDetected);
     }
 
     /** Menu slot index for a given row + column. */

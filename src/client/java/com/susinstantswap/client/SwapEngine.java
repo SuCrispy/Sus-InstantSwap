@@ -22,7 +22,8 @@ import java.lang.reflect.Field;
  * <p>
  * All methods use only Minecraft API ({@code net.minecraft.*}) plus
  * {@link SwapConfigAdapter} for configuration.  No NeoForge/Forge/Fabric
- * imports — this class can be synced verbatim across all platforms.
+ * imports here. The core swap logic is shared across platforms, but each
+ * platform keeps its own copy with adjustments for MC API differences.
  */
 public final class SwapEngine {
 
@@ -64,10 +65,12 @@ public final class SwapEngine {
         Slot hs = ScreenAccess.getSlotUnderMouse(screen);
         if (hs == null || (!hs.hasItem() && !config.emptySlotSwapEnabled())) {
             if (hs != null && !hs.hasItem()) SwapToast.warn("toast.susinstantswap.empty_slot_swap_disabled");
+            SwapLog.debug("[swap] abort: no hovered slot / empty-slot-swap off");
             return false;
         }
 
         int sel = mc.player.getInventory().selected;
+        SwapLog.debug("[swap] performSwap enter: hover={} sel={}", (hs==null?-1:hs.index), sel);
 
         if (isPlayerInventorySlot(hs) && hs.getContainerSlot() == sel) return false;
         if (!hs.hasItem() && mc.player.getInventory().getItem(sel).isEmpty()) return false;
@@ -132,6 +135,7 @@ public final class SwapEngine {
             SwapKeyState.closePendingTicks = closeDelay;
             return true;
         }
+        SwapLog.debug("[swap] no swap performed");
         return false;
     }
 
@@ -617,10 +621,6 @@ public final class SwapEngine {
             }
             return null;
         });
-    }
-
-    private static boolean isSlotWrapper(Slot slot) {
-        return slot.getClass() != Slot.class && findTargetField(slot.getClass()) != null;
     }
 
     private static Slot getSlotWrapperTarget(Slot slot) {

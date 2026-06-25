@@ -13,10 +13,9 @@ import net.minecraft.network.chat.TextColor;
  * <p>
  * 使用 action bar 显示提示信息，并内置冷却机制避免频繁刷屏。
  * <ul>
- *   <li>信息提示：白色/绿色</li>
  *   <li>警告提示：黄色</li>
- *   <li>错误提示：红色</li>
  * </ul>
+ * <p>当前仅实现 {@link #warn}（黄色警告提示）。
  */
 public final class SwapToast {
 

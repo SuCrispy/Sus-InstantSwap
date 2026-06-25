@@ -1,7 +1,6 @@
 {
   "description.susinstantswap": "通过长按机制，快速将物品栏中的物品换到手中，且支持整行交换到快捷栏。",
   "key.susinstantswap.swap_in_gui": "界面中交换",
-  "key.categories.susinstantswap": "探囊取物",
   "key.category.susinstantswap.main": "探囊取物",
   "config.susinstantswap.title": "探囊取物 - 配置",
   "config.susinstantswap.modEnabled": "启用模组",

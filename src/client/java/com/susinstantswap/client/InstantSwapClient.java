@@ -115,6 +115,7 @@ public class InstantSwapClient {
                 && SwapKeyState.lastTriggerKeyIsVanilla
                 && BackpackScreenMatcher.isBackpackScreen(s);
 
+        SwapLog.debug("[container] init: topLevel={} byInteract={} backpack={}", isTopLevel, byInteraction, BackpackScreenMatcher.isBackpackScreen(s));
         if (byInteraction || (isTopLevel && !openedDuringLongPress)) {
             positionCursorToUIBottomRight(s);
         }
@@ -183,6 +184,7 @@ public class InstantSwapClient {
                 && mc.screen instanceof AbstractContainerScreen) {
             boolean down = isGuiSwapKeyPhysicallyDown(mc);
             if (down && !guiSwapKeyWasDown) {
+                SwapLog.debug("[gui-swap] via tick-poll");
                 SwapEngine.performSwap(mc, config);
             }
             guiSwapKeyWasDown = down;
@@ -194,6 +196,7 @@ public class InstantSwapClient {
             SwapKeyState.closePendingTicks--;
             if (SwapKeyState.closePendingTicks == 0 && mc.screen instanceof AbstractContainerScreen) {
                 mc.player.closeContainer();
+                SwapLog.debug("[close] closeContainer() fired");
                 // Consume the inventory key's pending vanilla clicks so
                 // handleKeybinds() does NOT immediately reopen the screen from
                 // the same physical press (Fabric GLFW polling otherwise leaves
@@ -210,20 +213,23 @@ public class InstantSwapClient {
                     positionCursorIfEnabled(mc, mc.screen);
                     cursorRepositionedThisPress = true;
                 }
+                SwapLog.debug("[state] IDLE -> WATCHING");
                 state = SwapState.WATCHING;
             }
             return;
         }
 
         if (state == SwapState.WATCHING) {
-            if (mc.screen == null) { state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
+            if (mc.screen == null) { SwapLog.debug("[state] WATCHING -> IDLE (cancelled)"); state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
             if (!isAnyTargetKeyPhysicallyDown(mc)) {
+                SwapLog.debug("[state] WATCHING -> IDLE (cancelled)");
                 state = SwapState.IDLE;
                 cursorRepositionedThisPress = false;
                 return;
             }
             if ((System.nanoTime() - SwapKeyState.pressStartNanos)
                     >= config.holdThresholdMs() * 1_000_000L) {
+                SwapLog.debug("[state] WATCHING -> LONG_PRESS ({}ms)", config.holdThresholdMs());
                 state = SwapState.LONG_PRESS;
             }
             return;
@@ -233,10 +239,12 @@ public class InstantSwapClient {
             if (mc.screen == null) { state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
             if (!isAnyTargetKeyPhysicallyDown(mc) || !SwapKeyState.inventoryKeyHeld) {
                 boolean swapped = SwapEngine.performSwap(mc, config);
+                SwapLog.debug("[state] LONG_PRESS -> swap, swapped={}", swapped);
                 if (!swapped) {
                     int closeDelay = (mc.screen instanceof AbstractContainerScreen<?> s
                             && SwapEngine.isVanillaInventory(s)) ? 1 : 2;
                     SwapKeyState.closePendingTicks = closeDelay;
+                    SwapLog.debug("[close] scheduled in {} ticks", closeDelay);
                 }
                 state = SwapState.IDLE;
                 cursorRepositionedThisPress = false;
@@ -306,5 +314,6 @@ public class InstantSwapClient {
             SwapLog.debug("mouseReposition: reflection failed — {}", e.toString());
         }
         GLFW.glfwSetCursorPos(h, targetX, targetY);
+        SwapLog.debug("[mouse] cursor -> ({}, {})", targetX, targetY);
     }
 }

@@ -3,6 +3,6 @@
     "package": "com.susinstantswap.mixin",
     "compatibilityLevel": "JAVA_21",
     "mixins": [],
-    "client": ["KeyClickMixin", "ScreenKeyMixin", "ContainerScreenMixin", "ContainerSetSlotGuardMixin", "AbstractContainerScreenAccessor", "KeyMappingAccessor"],
+    "client": ["KeyClickMixin", "ScreenKeyMixin", "ContainerSetSlotGuardMixin", "AbstractContainerScreenAccessor", "KeyMappingAccessor"],
     "injectors": { "defaultRequire": 1 }
 }
