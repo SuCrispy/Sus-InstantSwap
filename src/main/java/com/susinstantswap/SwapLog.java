@@ -12,7 +12,7 @@ import org.slf4j.Logger;
  *   <li>{@code debug=true}  → {@link #debug(String, Object...)} outputs at INFO level</li>
  *   <li>{@code debug=false} → {@link #debug(String, Object...)} is suppressed</li>
  * </ul>
- * {@link #info}, {@link #warn}, {@link #error} always output regardless of debug mode.
+ * {@link #info} and {@link #warn} always output regardless of debug mode.
  * <p>
  * Call {@link #init(SwapConfigAdapter)} once during mod construction before any logging occurs.
  */
