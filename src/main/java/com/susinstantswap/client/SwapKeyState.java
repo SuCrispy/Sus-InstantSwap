@@ -198,7 +198,7 @@ public final class SwapKeyState {
         return targetKeys;
     }
 
-    /** Reflection-based access to KeyMapping.ALL (private field). Works across all platforms. */
+    /** Reflection-based access to KeyMapping.ALL (private field). Fallback only — the primary path uses the injected keyMappingsSupplier. */
     @SuppressWarnings("unchecked")
     private static Collection<KeyMapping> getAllKeyMappings() {
         if (keyMappingsSupplier != null) {
