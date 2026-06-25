@@ -39,7 +39,6 @@ public class InstantSwapClient {
 
     private static boolean configLogged = false;
     private static boolean cursorRepositionedThisPress = false;
-    private static boolean guiSwapKeyWasDown = false;
 
     public static void init(SwapConfigAdapter cfg) {
         config = cfg;
@@ -85,6 +84,7 @@ public class InstantSwapClient {
         boolean openedDuringLongPress = SwapKeyState.inventoryKeyHeld
                 && SwapKeyState.lastTriggerKeyIsVanilla
                 && BackpackScreenMatcher.isBackpackScreen(s);
+        SwapLog.debug("[container] init: topLevel={} byInteract={} backpack={}", isTopLevel, byInteraction, BackpackScreenMatcher.isBackpackScreen(s));
 
         if (byInteraction || (isTopLevel && !openedDuringLongPress)) {
             positionCursorToUIBottomRight(s);
@@ -161,22 +161,17 @@ public class InstantSwapClient {
         if (SwapKeyState.closePendingTicks > 0) {
             SwapKeyState.closePendingTicks--;
             if (SwapKeyState.closePendingTicks == 0 && mc.screen instanceof AbstractContainerScreen)
+                SwapLog.debug("[close] closeContainer() fired");
+            if (SwapKeyState.closePendingTicks == 0 && mc.screen instanceof AbstractContainerScreen)
                 mc.player.closeContainer();
         }
 
-        // GUI swap key (polled) — runs before state machine; skipped when GUI
-        // key matches a target key (ScreenKeyMixin handles that case).
-        if (config.guiSwapEnabled() && !SWAP_IN_GUI_KEY.isUnbound()
-                && mc.screen instanceof AbstractContainerScreen) {
-            InputConstants.Key guiKey = SWAP_IN_GUI_KEY.getKey();
-            if (!SwapKeyState.isTargetKey(guiKey)) {
-                boolean down = isGuiSwapKeyPhysicallyDown(mc);
-                if (down && !guiSwapKeyWasDown) {
-                    SwapEngine.performSwap(mc, config);
-                }
-                guiSwapKeyWasDown = down;
-            }
-        }
+        // GUI-swap is handled solely in onKeyInput (key-event path). The old
+        // per-tick polling path was removed to fix a double-swap bug: on
+        // backpack containers (close delay = 2 ticks) the screen stays open one
+        // extra tick, so the poll fired a SECOND performSwap on the same press
+        // that undid the first one (item appeared to swap back). The key-event
+        // path alone produces a single, immediate swap. See onKeyInput below.
 
         if (state == SwapState.IDLE) {
             if (SwapKeyState.inventoryKeyHeld && !SwapKeyState.screenWasOpenAtPressStart
@@ -186,20 +181,23 @@ public class InstantSwapClient {
                     cursorRepositionedThisPress = true;
                 }
                 state = SwapState.WATCHING;
+                SwapLog.debug("[state] IDLE -> WATCHING");
             }
             return;
         }
 
         if (state == SwapState.WATCHING) {
-            if (mc.screen == null) { state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
+            if (mc.screen == null) { SwapLog.debug("[state] WATCHING -> IDLE (cancelled)"); state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
             if (!isAnyTargetKeyPhysicallyDown(mc)) {
                 state = SwapState.IDLE;
+                SwapLog.debug("[state] WATCHING -> IDLE (cancelled)");
                 cursorRepositionedThisPress = false;
                 return;
             }
             if ((System.nanoTime() - SwapKeyState.pressStartNanos)
                     >= config.holdThresholdMs() * 1_000_000L) {
                 state = SwapState.LONG_PRESS;
+                SwapLog.debug("[state] WATCHING -> LONG_PRESS ({}ms)", (System.nanoTime() - SwapKeyState.pressStartNanos)/1_000_000);
             }
             return;
         }
@@ -208,10 +206,12 @@ public class InstantSwapClient {
             if (mc.screen == null) { state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
             if (!isAnyTargetKeyPhysicallyDown(mc) || !SwapKeyState.inventoryKeyHeld) {
                 boolean swapped = SwapEngine.performSwap(mc, config);
+                SwapLog.debug("[state] LONG_PRESS -> swap, swapped={}", swapped);
                 if (!swapped) {
                     int closeDelay = (mc.screen instanceof AbstractContainerScreen<?> s
                             && SwapEngine.isVanillaInventory(s)) ? 1 : 2;
                     SwapKeyState.closePendingTicks = closeDelay;
+                    SwapLog.debug("[close] scheduled in {} ticks", closeDelay);
                 }
                 state = SwapState.IDLE;
                 cursorRepositionedThisPress = false;
@@ -237,11 +237,13 @@ public class InstantSwapClient {
             InputConstants.Key eventKey = InputConstants.getKey(event.getKey(), event.getScanCode());
             if (SwapKeyState.isTargetKey(eventKey)) {
                 SwapKeyState.inventoryKeyHeld = false;
+                SwapLog.debug("[key] target UP (inventoryKeyHeld reset)");
             }
         }
 
         boolean isInventoryKey = isInventoryKeyEvent(mc, event);
         boolean isGuiSwapKey = !SWAP_IN_GUI_KEY.isUnbound() && isGuiSwapKeyEvent(event);
+        if (keyDown && isInventoryKey) SwapLog.debug("[key] target DOWN via key-event (screen={})", mc.screen);
 
         if (keyDown && isInventoryKey && mc.screen != null && hasEditBoxFocus(mc.screen)) {
             while (mc.options.keyInventory.consumeClick()) {}
@@ -253,6 +255,7 @@ public class InstantSwapClient {
         if (keyDown && config.guiSwapEnabled()) {
             if (isGuiSwapKey && mc.screen instanceof AbstractContainerScreen) {
                 SwapEngine.performSwap(mc, config);
+                SwapLog.debug("[gui-swap] via key-event");
             }
         }
     }
@@ -287,14 +290,6 @@ public class InstantSwapClient {
         return false;
     }
 
-    private static boolean isGuiSwapKeyPhysicallyDown(Minecraft mc) {
-        if (SWAP_IN_GUI_KEY.isUnbound()) return false;
-        InputConstants.Key bk = SWAP_IN_GUI_KEY.getKey();
-        long window = mc.getWindow().getWindow();
-        return bk.getType() == InputConstants.Type.KEYSYM
-                && GLFW.glfwGetKey(window, bk.getValue()) == GLFW.GLFW_PRESS;
-    }
-
     private static boolean isInventoryKeyEvent(Minecraft mc, InputEvent.Key event) {
         InputConstants.Key ik = mc.options.keyInventory.getKey();
         return ik.getType() == InputConstants.Type.KEYSYM && event.getKey() == ik.getValue();
@@ -325,6 +320,7 @@ public class InstantSwapClient {
         double gs = mc.getWindow().getGuiScale();
         int targetX = (int) ((s.getGuiLeft() + s.getXSize()) * gs) - 5;
         int targetY = (int) ((s.getGuiTop() + s.getYSize()) * gs) - 5;
+        SwapLog.debug("[mouse] cursor -> ({}, {})", targetX, targetY);
 
         MouseHandler mh = mc.mouseHandler;
         try {
