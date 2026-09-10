@@ -531,7 +531,7 @@ public final class SwapEngine {
 
     static void playSwapSound(Minecraft mc, SwapConfigAdapter config) {
         if (!config.soundEnabled() || mc.player == null) return;
-        mc.player.playNotifySound(SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.8f, 1.0f);
+        mc.player.playSound(SoundEvents.ITEM_PICKUP, 0.8f, 1.0f);
     }
 
     // ── Hotbar priority helpers ──

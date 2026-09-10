@@ -16,13 +16,13 @@ config="susinstantswap.mixins.json"
 [[dependencies.susinstantswap]]
 modId="neoforge"
 type="required"
-versionRange="[21.0,21.2)"
+versionRange="[21.11,21.12)"
 ordering="NONE"
 side="CLIENT"
 
 [[dependencies.susinstantswap]]
 modId="minecraft"
 type="required"
-versionRange="[1.21,1.21.2)"
+versionRange="[1.21.11,1.21.12)"
 ordering="NONE"
 side="CLIENT"

@@ -25,8 +25,7 @@ public class SusInstantSwapMod {
         CONFIG = new SwapConfig(b);
         CONFIG_SPEC = b.build();
         modContainer.registerConfig(ModConfig.Type.CLIENT, CONFIG_SPEC);
-        if (FMLEnvironment.dist == Dist.CLIENT)
-            modContainer.registerExtensionPoint(IConfigScreenFactory.class, (c, s) -> new ConfigurationScreen(c, s));
+        modContainer.registerExtensionPoint(IConfigScreenFactory.class, (c, s) -> new ConfigurationScreen(c, s));
         modEventBus.register(this);
         InstantSwapClient.init(CONFIG);
         SwapLog.info("v3.0.0 initialized");
