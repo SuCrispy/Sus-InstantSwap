@@ -46,7 +46,7 @@ public final class SwapEngine {
     public static void tickVerification(Minecraft mc) {
         if (swapVerifyTicks > 0) {
             swapVerifyTicks--;
-            if (swapVerifyTicks == 0 && mc.screen instanceof AbstractContainerScreen<?> vScreen) {
+            if (swapVerifyTicks == 0 && mc.gui.screen instanceof AbstractContainerScreen<?> vScreen) {
                 verifySwapResult(mc, vScreen);
             }
         }
@@ -54,7 +54,7 @@ public final class SwapEngine {
 
     /** Main swap entry point. Returns true if a swap was performed (screen closes via closePendingTicks). */
     public static boolean performSwap(Minecraft mc, SwapConfigAdapter config) {
-        if (!(mc.screen instanceof AbstractContainerScreen<?> screen)) return false;
+        if (!(mc.gui.screen instanceof AbstractContainerScreen<?> screen)) return false;
 
         // Row swap
         if (RowArrowWidget.hoveredRow >= 0 && config.rowSwapEnabled()) {

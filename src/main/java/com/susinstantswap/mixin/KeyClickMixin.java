@@ -24,7 +24,7 @@ public abstract class KeyClickMixin {
         }
         SwapKeyState.updateLastTriggerKeyIsVanilla(key);
         SwapKeyState.screenWasOpenAtPressStart =
-                Minecraft.getInstance().screen instanceof AbstractContainerScreen;
+                Minecraft.getInstance().gui.screen instanceof AbstractContainerScreen;
         SwapKeyState.inventoryKeyHeld = true;
         SwapKeyState.pressStartNanos = System.nanoTime();
     }

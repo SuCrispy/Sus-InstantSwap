@@ -1,23 +1,40 @@
-# Gradle
+# gradle
+
 .gradle/
 build/
-bin/
+out/
+classes/
 
-# IDE
+# eclipse
+
+*.launch
+
+# idea
+
 .idea/
 *.iml
 *.ipr
 *.iws
-.project
-.classpath
+
+# vscode
+
 .settings/
+.vscode/
+bin/
+.classpath
+.project
 
-# OS
-.DS_Store
-Thumbs.db
+# macos
 
-# Compiled mod JAR (download from Releases page)
-*.jar
+*.DS_Store
 
-# Logo variants (keep only Logo.png and Logo_512.png)
-Logo_Origin.png
+# fabric
+
+run/
+
+# java
+
+hs_err_*.log
+replay_*.log
+*.hprof
+*.jfr
