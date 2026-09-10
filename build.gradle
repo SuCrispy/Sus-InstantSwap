@@ -6,7 +6,7 @@ plugins {
 version = project.mod_version
 group = project.maven_group
 
-base { archivesName = 'Sus_InstantSwap-3.0.0-Fabric26.1' }
+base { archivesName = 'Sus_InstantSwap-3.0.0-Fabric26.2' }
 
 repositories {
     maven { url "https://api.modrinth.com/maven" }

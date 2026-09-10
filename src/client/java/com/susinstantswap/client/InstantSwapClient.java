@@ -91,7 +91,7 @@ public class InstantSwapClient {
             return InteractionResult.PASS;
         });
 
-        SwapLog.info("v3.0.0 client initialized (Fabric 26.1)");
+        SwapLog.info("v3.0.0 client initialized (Fabric 26.2)");
     }
 
     public static void registerKey(Object event) {
@@ -151,7 +151,7 @@ public class InstantSwapClient {
     }
 
     private static void onClientTick(Minecraft mc) {
-        previousScreen = mc.screen;
+        previousScreen = mc.gui.screen;
 
         SwapEngine.tickVerification(mc);
 
@@ -181,7 +181,7 @@ public class InstantSwapClient {
         // `state == IDLE` early-return, so it only fired while the inventory key
         // was held (i.e. only when the GUI-swap key equalled the inventory key).
         if (config.guiSwapEnabled() && !SWAP_IN_GUI_KEY.isUnbound()
-                && mc.screen instanceof AbstractContainerScreen) {
+                && mc.gui.screen instanceof AbstractContainerScreen) {
             boolean down = isGuiSwapKeyPhysicallyDown(mc);
             if (down && !guiSwapKeyWasDown) {
                 SwapLog.debug("[gui-swap] via tick-poll");
@@ -194,7 +194,7 @@ public class InstantSwapClient {
 
         if (SwapKeyState.closePendingTicks > 0) {
             SwapKeyState.closePendingTicks--;
-            if (SwapKeyState.closePendingTicks == 0 && mc.screen instanceof AbstractContainerScreen) {
+            if (SwapKeyState.closePendingTicks == 0 && mc.gui.screen instanceof AbstractContainerScreen) {
                 mc.player.closeContainer();
                 SwapLog.debug("[close] closeContainer() fired");
                 // Consume the inventory key's pending vanilla clicks so
@@ -208,9 +208,9 @@ public class InstantSwapClient {
 
         if (state == SwapState.IDLE) {
             if (SwapKeyState.inventoryKeyHeld && !SwapKeyState.screenWasOpenAtPressStart
-                    && mc.screen instanceof AbstractContainerScreen) {
+                    && mc.gui.screen instanceof AbstractContainerScreen) {
                 if (!cursorRepositionedThisPress) {
-                    positionCursorIfEnabled(mc, mc.screen);
+                    positionCursorIfEnabled(mc, mc.gui.screen);
                     cursorRepositionedThisPress = true;
                 }
                 SwapLog.debug("[state] IDLE -> WATCHING");
@@ -220,7 +220,7 @@ public class InstantSwapClient {
         }
 
         if (state == SwapState.WATCHING) {
-            if (mc.screen == null) { SwapLog.debug("[state] WATCHING -> IDLE (cancelled)"); state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
+            if (mc.gui.screen == null) { SwapLog.debug("[state] WATCHING -> IDLE (cancelled)"); state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
             if (!isAnyTargetKeyPhysicallyDown(mc)) {
                 SwapLog.debug("[state] WATCHING -> IDLE (cancelled)");
                 state = SwapState.IDLE;
@@ -236,12 +236,12 @@ public class InstantSwapClient {
         }
 
         if (state == SwapState.LONG_PRESS) {
-            if (mc.screen == null) { state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
+            if (mc.gui.screen == null) { state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
             if (!isAnyTargetKeyPhysicallyDown(mc) || !SwapKeyState.inventoryKeyHeld) {
                 boolean swapped = SwapEngine.performSwap(mc, config);
                 SwapLog.debug("[state] LONG_PRESS -> swap, swapped={}", swapped);
                 if (!swapped) {
-                    int closeDelay = (mc.screen instanceof AbstractContainerScreen<?> s
+                    int closeDelay = (mc.gui.screen instanceof AbstractContainerScreen<?> s
                             && SwapEngine.isVanillaInventory(s)) ? 1 : 2;
                     SwapKeyState.closePendingTicks = closeDelay;
                     SwapLog.debug("[close] scheduled in {} ticks", closeDelay);

@@ -106,6 +106,6 @@ public class SwapConfigScreen extends Screen {
     @Override
     public void onClose() {
         SusInstantSwapMod.CONFIG.save();
-        if (this.minecraft != null) this.minecraft.setScreen(parent);
+        if (this.minecraft != null) this.minecraft.gui.setScreen(parent);
     }
 }

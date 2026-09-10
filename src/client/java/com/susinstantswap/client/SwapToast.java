@@ -1,7 +1,6 @@
 package com.susinstantswap.client;
 
 import com.susinstantswap.config.SwapConfigAdapter;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -27,6 +26,9 @@ public final class SwapToast {
 
     private static SwapConfigAdapter config;
 
+    /** 黄色文本颜色（0xFFFF00），替代 26.2 中精简的 ChatFormatting */
+    private static final TextColor WARN_COLOR = TextColor.fromRgb(0xFFFF00);
+
     public static void init(SwapConfigAdapter cfg) {
         config = cfg;
     }
@@ -39,10 +41,10 @@ public final class SwapToast {
      * @param args 格式化参数
      */
     public static void warn(String key, Object... args) {
-        show(ChatFormatting.YELLOW, key, args);
+        show(WARN_COLOR, key, args);
     }
 
-    private static void show(ChatFormatting color, String key, Object... args) {
+    private static void show(TextColor color, String key, Object... args) {
         if (config == null || !config.toastEnabled()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
@@ -53,7 +55,7 @@ public final class SwapToast {
 
         MutableComponent msg = Component.translatable(key, args);
         // 将整个消息着色
-        msg.setStyle(Style.EMPTY.withColor(TextColor.fromLegacyFormat(color)));
+        msg.setStyle(Style.EMPTY.withColor(color));
 
         // 使用 action bar 显示（第二个参数 true = overlay）
         mc.player.sendOverlayMessage(msg);

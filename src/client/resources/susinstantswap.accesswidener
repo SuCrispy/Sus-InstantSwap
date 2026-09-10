@@ -8,3 +8,4 @@ accessible field net/minecraft/client/MouseHandler ypos D
 accessible field net/minecraft/client/gui/screens/inventory/AbstractContainerScreen hoveredSlot Lnet/minecraft/world/inventory/Slot;
 accessible field net/minecraft/world/entity/player/Inventory selected I
 accessible field net/minecraft/world/entity/player/Inventory items Lnet/minecraft/core/NonNullList;
+accessible field net/minecraft/client/gui/Gui screen Lnet/minecraft/client/gui/screens/Screen;
