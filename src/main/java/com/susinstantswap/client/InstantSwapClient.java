@@ -68,7 +68,7 @@ public class InstantSwapClient {
         // the binding never reached the Controls screen before — this restores
         // the verified v2.0.0 registration path.
         RegisterKeyMappingsEvent.BUS.addListener(InstantSwapClient::registerKey);
-        SwapLog.info("v3.0.0 initialized (Forge 26.1)");
+        SwapLog.info("v3.0.0 initialized (Forge 26.2)");
     }
     public static void registerKey(RegisterKeyMappingsEvent event) {
         event.register(SWAP_IN_GUI_KEY);
@@ -154,7 +154,7 @@ public class InstantSwapClient {
     public static void onClientTick(TickEvent.ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
 
-        previousScreen = mc.screen;
+        previousScreen = ScreenUtil.get(mc);
 
         // Delegate swap verification to SwapEngine
         SwapEngine.tickVerification(mc);
@@ -182,17 +182,17 @@ public class InstantSwapClient {
 
         if (SwapKeyState.closePendingTicks > 0) {
             SwapKeyState.closePendingTicks--;
-            if (SwapKeyState.closePendingTicks == 0 && mc.screen instanceof AbstractContainerScreen)
+            if (SwapKeyState.closePendingTicks == 0 && ScreenUtil.get(mc) instanceof AbstractContainerScreen)
                 SwapLog.debug("[close] closeContainer() fired");
-            if (SwapKeyState.closePendingTicks == 0 && mc.screen instanceof AbstractContainerScreen)
+            if (SwapKeyState.closePendingTicks == 0 && ScreenUtil.get(mc) instanceof AbstractContainerScreen)
                 mc.player.closeContainer();
         }
 
         if (state == SwapState.IDLE) {
             if (SwapKeyState.inventoryKeyHeld && !SwapKeyState.screenWasOpenAtPressStart
-                    && mc.screen instanceof AbstractContainerScreen) {
+                    && ScreenUtil.get(mc) instanceof AbstractContainerScreen) {
                 if (!cursorRepositionedThisPress) {
-                    positionCursorIfEnabled(mc, mc.screen);
+                    positionCursorIfEnabled(mc, ScreenUtil.get(mc));
                     cursorRepositionedThisPress = true;
                 }
                 state = SwapState.WATCHING;
@@ -202,7 +202,7 @@ public class InstantSwapClient {
         }
 
         if (state == SwapState.WATCHING) {
-            if (mc.screen == null) { SwapLog.debug("[state] WATCHING -> IDLE (cancelled)"); state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
+            if (ScreenUtil.get(mc) == null) { SwapLog.debug("[state] WATCHING -> IDLE (cancelled)"); state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
             if (!isAnyTargetKeyPhysicallyDown(mc)) {
                 state = SwapState.IDLE;
                 SwapLog.debug("[state] WATCHING -> IDLE (cancelled)");
@@ -218,12 +218,12 @@ public class InstantSwapClient {
         }
 
         if (state == SwapState.LONG_PRESS) {
-            if (mc.screen == null) { state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
+            if (ScreenUtil.get(mc) == null) { state = SwapState.IDLE; cursorRepositionedThisPress = false; return; }
             if (!isAnyTargetKeyPhysicallyDown(mc) || !SwapKeyState.inventoryKeyHeld) {
                 boolean swapped = SwapEngine.performSwap(mc, config);
                 SwapLog.debug("[state] LONG_PRESS -> swap, swapped={}", swapped);
                 if (!swapped) {
-                    int closeDelay = (mc.screen instanceof AbstractContainerScreen<?> s
+                    int closeDelay = (ScreenUtil.get(mc) instanceof AbstractContainerScreen<?> s
                             && SwapEngine.isVanillaInventory(s)) ? 1 : 2;
                     SwapKeyState.closePendingTicks = closeDelay;
                     SwapLog.debug("[close] scheduled in {} ticks", closeDelay);
@@ -245,17 +245,17 @@ public class InstantSwapClient {
         boolean keyDown = (action == GLFW.GLFW_PRESS);
         boolean isInventoryKey = isInventoryKeyEvent(mc, event);
         boolean isGuiSwapKey = !SWAP_IN_GUI_KEY.isUnbound() && isGuiSwapKeyEvent(event);
-        if (keyDown && isInventoryKey) SwapLog.debug("[key] target DOWN via key-event (screen={})", mc.screen);
+        if (keyDown && isInventoryKey) SwapLog.debug("[key] target DOWN via key-event (screen={})", ScreenUtil.get(mc));
 
-        if (keyDown && isInventoryKey && mc.screen != null && hasEditBoxFocus(mc.screen)) {
+        if (keyDown && isInventoryKey && ScreenUtil.get(mc) != null && hasEditBoxFocus(ScreenUtil.get(mc))) {
             while (mc.options.keyInventory.consumeClick()) {}
-            if (mc.screen instanceof AbstractContainerScreen) {
+            if (ScreenUtil.get(mc) instanceof AbstractContainerScreen) {
                 if (mc.player.containerMenu.getSlot(0).hasItem()) return;
             } else return;
         }
 
         if (keyDown && config.guiSwapEnabled()) {
-            if (isGuiSwapKey && mc.screen instanceof AbstractContainerScreen) {
+            if (isGuiSwapKey && ScreenUtil.get(mc) instanceof AbstractContainerScreen) {
                 SwapEngine.performSwap(mc, config);
                 SwapLog.debug("[gui-swap] via key-event");
             }

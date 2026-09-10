@@ -1,6 +1,7 @@
 package com.susinstantswap.mixin;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import com.susinstantswap.client.ScreenUtil;
 import com.susinstantswap.client.SwapKeyState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.KeyMapping;
@@ -24,7 +25,7 @@ public abstract class KeyClickMixin {
         }
         SwapKeyState.updateLastTriggerKeyIsVanilla(key);
         SwapKeyState.screenWasOpenAtPressStart =
-                Minecraft.getInstance().screen instanceof AbstractContainerScreen;
+                ScreenUtil.get(Minecraft.getInstance()) instanceof AbstractContainerScreen;
         SwapKeyState.inventoryKeyHeld = true;
         SwapKeyState.pressStartNanos = System.nanoTime();
     }

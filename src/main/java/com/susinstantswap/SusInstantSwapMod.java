@@ -36,6 +36,6 @@ public class SusInstantSwapMod {
         // @Mod-class @SubscribeEvent handler did NOT receive the mod-bus event
         // under FML 8 auto-scan, so it has been removed.
         InstantSwapClient.init(CONFIG);
-        SwapLog.info("v3.0.0 initialized (Forge 26.1)");
+        SwapLog.info("v3.0.0 initialized (Forge 26.2)");
     }
 }

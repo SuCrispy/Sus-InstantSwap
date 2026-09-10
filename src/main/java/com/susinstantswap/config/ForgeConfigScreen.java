@@ -105,6 +105,6 @@ public class ForgeConfigScreen extends Screen {
     @Override
     public void onClose() {
         SusInstantSwapMod.CONFIG_SPEC.save();
-        if (this.minecraft != null) this.minecraft.setScreen(parent);
+        if (this.minecraft != null) this.minecraft.gui.setScreen(parent);
     }
 }

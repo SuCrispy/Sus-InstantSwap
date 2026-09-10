@@ -6,7 +6,7 @@ plugins {
     id 'net.minecraftforge.gradle' version '[7.0.17,8)'
 }
 
-base { archivesName = 'Sus_InstantSwap-3.0.0-Forge26.1' }
+base { archivesName = 'Sus_InstantSwap-3.0.0-Forge26.2' }
 
 version = '3.0.0'
 group = 'com.susinstantswap'
@@ -33,15 +33,15 @@ repositories {
 }
 
 dependencies {
-    implementation minecraft.dependency('net.minecraftforge:forge:26.1-62.0.9')
+    implementation minecraft.dependency('net.minecraftforge:forge:26.2-65.0.9')
     annotationProcessor 'net.minecraftforge:eventbus-validator:7.0.1'
     annotationProcessor 'org.spongepowered:mixin:0.8.7:processor'
 }
 
 tasks.named('processResources', ProcessResources).configure {
     var replaceProperties = [
-        minecraft_version: '26.1',
-        forge_version: '62.0.9',
+        minecraft_version: '26.2',
+        forge_version: '65.0.9',
         mod_id: 'susinstantswap',
         mod_version: '3.0.0',
     ]
