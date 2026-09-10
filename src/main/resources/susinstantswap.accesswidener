@@ -5,3 +5,6 @@ accessible field net/minecraft/client/gui/screens/inventory/AbstractContainerScr
 accessible class net/minecraft/client/gui/screens/inventory/CreativeModeInventoryScreen$SlotWrapper
 accessible field net/minecraft/client/gui/screens/inventory/CreativeModeInventoryScreen CONTAINER Lnet/minecraft/world/SimpleContainer;
 accessible field net/minecraft/client/gui/screens/inventory/CreativeModeInventoryScreen$SlotWrapper target Lnet/minecraft/world/inventory/Slot;
+accessible field net/minecraft/world/entity/player/Inventory selected I
+accessible field net/minecraft/world/entity/player/Inventory items Lnet/minecraft/core/NonNullList;
+accessible field net/minecraft/client/KeyMapping ALL Ljava/util/Map;

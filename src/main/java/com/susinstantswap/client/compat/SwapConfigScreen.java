@@ -94,7 +94,8 @@ public class SwapConfigScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
+        // 1.21.9+: framework calls renderBackground before render (renderWithTooltipAndSubtitles);
+        // calling it again here triggers "Can only blur once per frame"
         guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 15, 0xFFFFFF);
         super.render(guiGraphics, mouseX, mouseY, partialTick);
     }
