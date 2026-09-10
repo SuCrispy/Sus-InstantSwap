@@ -5,6 +5,7 @@ import com.susinstantswap.client.InstantSwapClient;
 import com.susinstantswap.client.SwapKeyState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.KeyEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -27,15 +28,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(value = AbstractContainerScreen.class)
 public class ScreenKeyMixin {
 
-    @Inject(method = "keyPressed(III)Z", at = @At("HEAD"), cancellable = true)
-    private void onKeyPressed(int keyCode, int scanCode, int modifiers,
+    @Inject(method = "keyPressed(Lnet/minecraft/client/input/KeyEvent;)Z", at = @At("HEAD"), cancellable = true)
+    private void onKeyPressed(KeyEvent event,
                               CallbackInfoReturnable<Boolean> cir) {
         if (!SwapKeyState.modEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc == null || mc.options == null) return;
 
         InputConstants.Key invKey = ((KeyMappingAccessor) mc.options.keyInventory).getKey();
-        InputConstants.Key pressed = InputConstants.getKey(keyCode, scanCode);
+        InputConstants.Key pressed = InputConstants.getKey(event);
         if (pressed.getType() != invKey.getType() || pressed.getValue() != invKey.getValue()) return;
 
         if (SwapKeyState.inventoryKeyHeld) {

@@ -41,8 +41,8 @@ public class ContainerScreenMixin {
         RowArrowWidget.visible = true;
         RowArrowWidget.checkHover(mouseX, mouseY);
 
-        guiGraphics.pose().pushPose();
+        guiGraphics.pose().pushMatrix();
         RowArrowWidget.render(mc, guiGraphics);
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().popMatrix();
     }
 }
