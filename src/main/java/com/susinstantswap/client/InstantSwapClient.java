@@ -34,6 +34,10 @@ public class InstantSwapClient {
     private static KeyMapping SWAP_IN_GUI_KEY;
     private static SwapConfigAdapter config;
 
+    private static final KeyMapping.Category CATEGORY =
+            KeyMapping.Category.register(
+                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("susinstantswap", "main"));
+
     enum SwapState { IDLE, WATCHING, LONG_PRESS }
     private static SwapState state = SwapState.IDLE;
 
@@ -48,7 +52,7 @@ public class InstantSwapClient {
         SwapKeyState.setConfig(cfg);
         SWAP_IN_GUI_KEY = new KeyMapping("key.susinstantswap.swap_in_gui",
                 InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT,
-                "key.categories.susinstantswap");
+                CATEGORY);
         NeoForge.EVENT_BUS.register(InstantSwapClient.class);
     }
 
@@ -106,9 +110,9 @@ public class InstantSwapClient {
         RowArrowWidget.detectRows(screen, mc.player);
         RowArrowWidget.visible = true;
         RowArrowWidget.checkHover(event.getMouseX(), event.getMouseY());
-        event.getGuiGraphics().pose().pushPose();
+        event.getGuiGraphics().pose().pushMatrix();
         RowArrowWidget.render(mc, event.getGuiGraphics());
-        event.getGuiGraphics().pose().popPose();
+        event.getGuiGraphics().pose().popMatrix();
     }
 
     @SubscribeEvent
@@ -255,7 +259,7 @@ public class InstantSwapClient {
     // ── Private helpers (NeoForge-specific) ──
 
     private static boolean isAnyTargetKeyPhysicallyDown(Minecraft mc) {
-        long window = mc.getWindow().getWindow();
+        long window = mc.getWindow().handle();
         for (InputConstants.Key key : SwapKeyState.getTargetKeys()) {
             if (key.getType() == InputConstants.Type.KEYSYM
                     && GLFW.glfwGetKey(window, key.getValue()) == GLFW.GLFW_PRESS) {
@@ -291,7 +295,7 @@ public class InstantSwapClient {
 
     private static void positionCursorToUIBottomRight(AbstractContainerScreen<?> s) {
         Minecraft mc = Minecraft.getInstance();
-        long h = mc.getWindow().getWindow();
+        long h = mc.getWindow().handle();
         double gs = mc.getWindow().getGuiScale();
         int targetX = (int) ((s.getGuiLeft() + s.getXSize()) * gs) - 5;
         int targetY = (int) ((s.getGuiTop() + s.getYSize()) * gs) - 5;
