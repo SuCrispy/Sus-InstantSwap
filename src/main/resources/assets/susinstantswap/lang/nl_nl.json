@@ -1,7 +1,7 @@
 {
   "description.susinstantswap": "Houd de inventaristoets ingedrukt om items met de hotbar te wisselen. Coëxisteert met vanilla — kort indrukken opent inventaris, lang indrukken wisselt.",
   "key.susinstantswap.swap_in_gui": "Wissel in GUI",
-  "key.categories.susinstantswap": "Su's Instant Swap",
+  "key.category.susinstantswap.main": "Su's Instant Swap",
   "config.susinstantswap.title": "Su's Instant Swap — Instellingen",
   "config.susinstantswap.modEnabled": "Mod inschakelen",
   "config.susinstantswap.modEnabled.tooltip": "Hoofdschakelaar — uitgeschakeld is de mod volledig inactief, E-toets gedraagt zich als vanilla.",

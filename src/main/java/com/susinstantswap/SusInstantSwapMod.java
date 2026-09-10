@@ -5,7 +5,7 @@ import com.susinstantswap.config.ForgeConfigScreen;
 import com.susinstantswap.config.SwapConfig;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
@@ -30,13 +30,11 @@ public class SusInstantSwapMod {
                 () -> new ConfigScreenHandler.ConfigScreenFactory(ForgeConfigScreen::new)
         );
 
-        context.getModEventBus().register(this);
+        // In Forge 61.x (FG 7), getModEventBus() is removed.
+        // RegisterKeyMappingsEvent uses the BUS pattern instead.
+        net.minecraftforge.client.event.RegisterKeyMappingsEvent.BUS.addListener(InstantSwapClient::registerKey);
         InstantSwapClient.init(CONFIG);
-        SwapLog.info("v3.0.0 initialized (Forge 1.21.1)");
+        SwapLog.info("v3.0.0 initialized (Forge 1.21.11)");
     }
 
-    @SubscribeEvent
-    public void onRegisterKeyMappings(net.minecraftforge.client.event.RegisterKeyMappingsEvent event) {
-        InstantSwapClient.registerKey(event);
-    }
 }
